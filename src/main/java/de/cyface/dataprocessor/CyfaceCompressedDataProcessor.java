@@ -35,12 +35,17 @@ public class CyfaceCompressedDataProcessor {
     FileOutputStream uncompressedBinaryOutputStream;
     BufferedInputStream uncompressedBinaryInputStream;
     InflaterInputStream inflaterInputStream;
-    FileOutputStream binLocationTemp;
-    FileOutputStream binAccTemp;
-    FileOutputStream binRotTemp;
-    FileOutputStream binDirTemp;
+    OutputStream binLocationTemp;
+    OutputStream binAccTemp;
+    OutputStream binRotTemp;
+    OutputStream binDirTemp;
 
     String uncompressedTempfile;
+    String locTempFile;
+    String accTempFile;
+    String rotTempFile;
+    String dirTempFile;
+    
 
     private boolean uncompressed;
 
@@ -62,7 +67,16 @@ public class CyfaceCompressedDataProcessor {
      * @throws IOException
      */
     public CyfaceCompressedDataProcessor(InputStream binaryInputStream, boolean compressed) throws IOException {
+    	File tempFolder = new File(TEMP_FOLDER);
+        if (!tempFolder.exists()) {
+            tempFolder.mkdirs();
+        }
         this.uncompressedTempfile = TEMP_FOLDER + UUID.randomUUID().toString();
+        locTempFile = uncompressedTempfile + "_loc";
+        accTempFile = uncompressedTempfile + "_acc";
+        rotTempFile =  uncompressedTempfile + "_rot";
+        dirTempFile = uncompressedTempfile + "_dir";
+        
         this.uncompressedBinaryOutputStream = new FileOutputStream(uncompressedTempfile);
         if (!compressed) {
             uncompressed = true;
@@ -71,10 +85,7 @@ public class CyfaceCompressedDataProcessor {
         } else {
             this.compressedBinaryInputStream = binaryInputStream;
         }
-        File tempFolder = new File(TEMP_FOLDER);
-        if (!tempFolder.exists()) {
-            tempFolder.mkdirs();
-        }
+        
     }
 
     /**
@@ -134,41 +145,44 @@ public class CyfaceCompressedDataProcessor {
 
     /**
      * 
-     * @param locationsCount 0 to get all. Reader header first to get the max number of retrievable geo locations.
+     * @param locationsCount -1 to get all from offset. Reader header first to get the max number of retrievable geo locations.
+     * @param locationsOffset skip given number of locations
      * @return
      * @throws CyfaceCompressedDataProcessorException
      * @throws IOException
      */
-    public List<Map<String, ?>> getLocationDataAsList(int locationsCount)
+    public List<Map<String, ?>> getLocationDataAsList(int locationsOffset, int locationsCount)
             throws CyfaceCompressedDataProcessorException, IOException {
         checkUncompressedOrThrowException();
         checkHeaderRead();
-        writeLocationstoBinFile();
+        BufferedInputStream binLocationsIn = new BufferedInputStream(new FileInputStream(locTempFile));
+        int bytesOffset = locationsOffset * ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY;
+        int bytesTempOffset = bytesOffset;
+        while(bytesTempOffset>0) {
+        binLocationsIn.read();
+        bytesTempOffset--;
+        }
+        
+        int bytesToRead = locationsCount * ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY;
         byte[] locationBytes = null;
-        if (locationsCount == 0) {
-            int locationBytesCount = header.getBeginOfAccelerationsIndex() - header.getBeginOfGeoLocationsIndex();
+        if (locationsCount == -1) {
+            int locationBytesCount = header.getBeginOfAccelerationsIndex() - header.getBeginOfGeoLocationsIndex()-bytesOffset;
             locationBytes = new byte[locationBytesCount];
-            int read = uncompressedBinaryInputStream.read(locationBytes, 0, locationBytesCount);
+            binLocationsIn.read(locationBytes, 0, locationBytesCount);
         } else {
-
             if (locationsCount > header.getNumberOfGeoLocations()) {
+            	binLocationsIn.close();
                 throw new CyfaceCompressedDataProcessorException(NOT_SO_MANY_GEOLOCATIONS_EXCEPTION);
             } else {
-                int bytesEnd = header.getBeginOfGeoLocationsIndex()
-                        + locationsCount * ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY;
-                System.out.println("#" + (bytesEnd - header.getBeginOfGeoLocationsIndex()));
-                locationBytes = new byte[bytesEnd - header.getBeginOfGeoLocationsIndex()];
-                uncompressedBinaryInputStream.read(locationBytes, 0, bytesEnd);
+                System.out.println("#" + (bytesToRead));
+                locationBytes = new byte[bytesToRead];
+                binLocationsIn.read(locationBytes, 0, bytesToRead);
             }
         }
 
         List<Map<String, ?>> geoLocations = deserializeGeoLocations(locationBytes);
+        binLocationsIn.close();
         return geoLocations;
-    }
-
-    private void writeLocationstoBinFile() {
-        // TODO Auto-generated method stub
-
     }
 
     private void readHeader() throws CyfaceCompressedDataProcessorException, IOException {
@@ -203,41 +217,53 @@ public class CyfaceCompressedDataProcessor {
         // read the header first.
         this.readHeader();
         // write out geo locations
-        this.binLocationTemp = new FileOutputStream(uncompressedTempfile + "_loc");
+        this.binLocationTemp = new FileOutputStream(locTempFile);
         int locationBytesCount = header.getBeginOfAccelerationsIndex() - header.getBeginOfGeoLocationsIndex();
+        System.out.println(locationBytesCount);
         copyStream(uncompressedBinaryInputStream, binLocationTemp, 0, locationBytesCount);
         // write out accelerometer data
-        this.binAccTemp = new FileOutputStream(uncompressedTempfile + "_acc");
+        this.binAccTemp = new FileOutputStream(accTempFile);
         int accBytesCount = header.getBeginOfRotationsIndex() - header.getBeginOfAccelerationsIndex();
+        System.out.println(accBytesCount);
         copyStream(uncompressedBinaryInputStream, binAccTemp, 0, accBytesCount);
         // write out rotation data
-        this.binRotTemp = new FileOutputStream(uncompressedTempfile + "_rot");
+        this.binRotTemp = new FileOutputStream(rotTempFile);
         int rotBytesCount = header.getBeginOfDirectionsIndex() - header.getBeginOfRotationsIndex();
+        System.out.println(rotBytesCount);
         copyStream(uncompressedBinaryInputStream, binRotTemp, 0, rotBytesCount);
         // write out direction data
-        this.binDirTemp = new FileOutputStream(uncompressedTempfile + "_dir");
+        this.binDirTemp = new FileOutputStream(dirTempFile);
         int dirBytesCount = ByteSizes.BYTES_IN_ONE_POINT_ENTRY * header.getNumberOfDirections();
-        copyStream(uncompressedBinaryInputStream, binRotTemp, 0, dirBytesCount);
+        System.out.println(dirBytesCount);
+        copyStream(uncompressedBinaryInputStream, binDirTemp, 0, dirBytesCount);
     }
 
     /**
-     * Copies a part (bytes from start to end) of an input stream to an output stream (thx to
-     * https://stackoverflow.com/questions/22645895/java-copy-part-of-inputstream-to-outputstream)
+     * Copies a part of an input stream to an output stream
      * 
-     * @param input
-     * @param output
-     * @param start
-     * @param end
+     * @param input the stream to read from
+     * @param output the stream to write to
+     * @param offset start point of the part to read from the input
+     * @param readNumberOfBytes total number of bytes to copy from offset
      * @throws IOException
      */
-    private static void copyStream(InputStream input, OutputStream output, long start, long end) throws IOException {
-        for (int i = 0; i < start; i++)
-            input.read(); // dispose of the unwanted bytes
-        byte[] buffer = new byte[4096]; // Adjust if you want
-        int bytesRead;
-        while ((bytesRead = input.read(buffer)) != -1 && bytesRead <= end) // test for EOF or end reached
-        {
-            output.write(buffer, 0, bytesRead);
+    private static void copyStream(InputStream input, OutputStream output, long offset, long readNumberOfBytes) throws IOException {
+    	int bufSize = 1024;
+    	if(readNumberOfBytes < bufSize) {
+    		bufSize = 1;
+    	}
+        for (int i = 0; i < offset; i++)
+            input.read(); // skip unwanted bytes
+        byte[] buf = new byte[1024];
+        int bytesCount;
+        int bytesRead = 0;
+        // System.out.println("Read bytes: " + eof);
+        while ((bytesCount = input.read(buf, 0, bufSize)) != -1 && bytesRead < readNumberOfBytes) {
+        	bytesRead += bytesCount;
+        	output.write(buf, 0, bytesCount);
+        	if((readNumberOfBytes - bytesRead)<bufSize) {
+        		bufSize = Math.toIntExact(readNumberOfBytes - bytesRead);
+        	}
         }
     }
 
@@ -324,17 +350,6 @@ public class CyfaceCompressedDataProcessor {
         private static final long serialVersionUID = 3893090953252038103L;
 
     }
-
-    @Override
-    protected void finalize() throws Throwable {
-        File tempFile = new File(uncompressedTempfile);
-        if (tempFile.exists()) {
-            tempFile.delete();
-        }
-        compressedBinaryInputStream.close();
-        uncompressedBinaryInputStream.close();
-        uncompressedBinaryOutputStream.close();
-        inflaterInputStream.close();
-    }
+    
 
 }
