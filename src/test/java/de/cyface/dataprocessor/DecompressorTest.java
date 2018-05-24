@@ -18,7 +18,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
-import de.cyface.dataprocessor.CyfaceCompressedDataProcessor.CyfaceCompressedDataProcessorException;
+import de.cyface.dataprocessor.CyfaceDataProcessor.CyfaceCompressedDataProcessorException;
 
 public class DecompressorTest {
 
@@ -32,9 +32,9 @@ public class DecompressorTest {
     @Test
     public void testDecompressCyfaceBinary() throws CyfaceCompressedDataProcessorException, IOException {
         fileInputStream = new FileInputStream(this.getClass().getResource("/compressedCyfaceData").getFile());
-        CyfaceCompressedDataProcessor proc = null;
+        CyfaceDataProcessor proc = null;
         try {
-            proc = new CyfaceCompressedDataProcessor(fileInputStream, true);
+            proc = new CyfaceDataProcessor(fileInputStream, true);
             proc.uncompressAndPrepare();
         } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -65,11 +65,10 @@ public class DecompressorTest {
 
     @Test
     public void testDeserializeHugeUncompressedCyfaceData() throws CyfaceCompressedDataProcessorException, IOException {
-        System.out.println();
         fileInputStream = new FileInputStream(this.getClass().getResource("/uncompressedCyfaceBigData.cyf").getFile());
-        CyfaceCompressedDataProcessor proc = null;
+        CyfaceDataProcessor proc = null;
         try {
-            proc = new CyfaceCompressedDataProcessor(fileInputStream, false);
+            proc = new CyfaceDataProcessor(fileInputStream, false);
             proc.uncompressAndPrepare();
         } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -78,7 +77,7 @@ public class DecompressorTest {
         byte[] individualBytes = proc.getUncompressedBinaryAsArray();
         assertEquals(individualBytes.length, 118255978);
 
-        System.out.println(proc.getHeader().getNumberOfRotations());
+        System.out.println(proc.getHeader().getNumberOfGeoLocations());
 
         ByteBuffer buffer = ByteBuffer.wrap(individualBytes);
         short formatVersion = buffer.order(ByteOrder.BIG_ENDIAN).getShort(0);
@@ -92,18 +91,39 @@ public class DecompressorTest {
         int numberOfDirections = buffer.order(ByteOrder.BIG_ENDIAN).getInt(14);
         assertThat(numberOfDirections, is(equalTo(0)));
 
-        List<Map<String, ?>> geoLocs = proc.getLocationDataAsList(0);
-        geoLocs.forEach(item -> {
-            System.out.println(item.toString());
-        });
+        // List<Map<String, ?>> geoLocs = proc.getLocationDataAsList(0);
+        // geoLocs.forEach(item -> {
+        // System.out.println(item.toString());
+        // });
+
+        Map<String, ?> locItem;
+        while ((locItem = proc.pollNextLocationPoint()) != null) {
+            System.out.println(locItem.toString());
+        }
+
+        Map<String, ?> accItem;
+        while ((accItem = proc.pollNextAccelerationPoint()) != null) {
+            System.out.println(accItem.toString());
+        }
+
+        Map<String, ?> rotItem;
+        while ((rotItem = proc.pollNextRotationPoint()) != null) {
+            System.out.println(rotItem.toString());
+        }
+
+        Map<String, ?> dirItem;
+        while ((dirItem = proc.pollNextDirectionPoint()) != null) {
+            System.out.println(dirItem.toString());
+        }
+
     }
 
     @Test
     public void bigDataTestDDLE() throws CyfaceCompressedDataProcessorException, IOException {
         fileInputStream = new FileInputStream(this.getClass().getResource("/cyfaceDDLE.ccyf").getFile());
-        CyfaceCompressedDataProcessor proc = null;
+        CyfaceDataProcessor proc = null;
         try {
-            proc = new CyfaceCompressedDataProcessor(fileInputStream, true);
+            proc = new CyfaceDataProcessor(fileInputStream, true);
             proc.uncompressAndPrepare();
         } catch (IOException e) {
             // TODO Auto-generated catch block
