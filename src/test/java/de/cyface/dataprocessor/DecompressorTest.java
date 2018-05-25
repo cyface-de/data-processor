@@ -12,12 +12,12 @@ import java.nio.ByteOrder;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import de.cyface.data.LocationPoint;
+import de.cyface.data.Point3D;
 import de.cyface.dataprocessor.CyfaceDataProcessor.CyfaceCompressedDataProcessorException;
 
 public class DecompressorTest {
@@ -35,12 +35,12 @@ public class DecompressorTest {
         CyfaceDataProcessor proc = null;
         try {
             proc = new CyfaceDataProcessor(fileInputStream, true);
-            proc.uncompressAndPrepare();
+            proc.decompressAndPrepare();
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        byte[] individualBytes = proc.getUncompressedBinaryAsArray();
+        byte[] individualBytes = proc.getDecompressedBinaryAsArray();
         assertEquals(individualBytes.length, 116398);
 
         System.out.println(proc.getHeader().getNumberOfGeoLocations());
@@ -57,10 +57,10 @@ public class DecompressorTest {
         int numberOfDirections = buffer.order(ByteOrder.BIG_ENDIAN).getInt(14);
         assertThat(numberOfDirections, is(equalTo(2)));
 
-        List<Map<String, ?>> geoLocs = proc.getLocationDataAsList(0);
-        geoLocs.forEach(item -> {
-            System.out.println(item.toString());
-        });
+        LocationPoint locItem;
+        while ((locItem = proc.pollNextLocationPoint()) != null) {
+            System.out.println(locItem.toString());
+        }
     }
 
     @Test
@@ -69,12 +69,12 @@ public class DecompressorTest {
         CyfaceDataProcessor proc = null;
         try {
             proc = new CyfaceDataProcessor(fileInputStream, false);
-            proc.uncompressAndPrepare();
+            proc.decompressAndPrepare();
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        byte[] individualBytes = proc.getUncompressedBinaryAsArray();
+        byte[] individualBytes = proc.getDecompressedBinaryAsArray();
         assertEquals(individualBytes.length, 118255978);
 
         System.out.println(proc.getHeader().getNumberOfGeoLocations());
@@ -96,26 +96,46 @@ public class DecompressorTest {
         // System.out.println(item.toString());
         // });
 
-        Map<String, ?> locItem;
+        LocationPoint locItem;
         while ((locItem = proc.pollNextLocationPoint()) != null) {
             System.out.println(locItem.toString());
         }
 
-        Map<String, ?> accItem;
+        Point3D accItem;
         while ((accItem = proc.pollNextAccelerationPoint()) != null) {
             System.out.println(accItem.toString());
         }
 
-        Map<String, ?> rotItem;
+        Point3D rotItem;
         while ((rotItem = proc.pollNextRotationPoint()) != null) {
             System.out.println(rotItem.toString());
         }
 
-        Map<String, ?> dirItem;
+        Point3D dirItem;
         while ((dirItem = proc.pollNextDirectionPoint()) != null) {
             System.out.println(dirItem.toString());
         }
 
+    }
+
+    @Test
+    public void testDecompressAndPrepareIOSData() throws CyfaceCompressedDataProcessorException, IOException {
+        fileInputStream = new FileInputStream(this.getClass().getResource("/iphone.ccyf").getFile());
+        CyfaceDataProcessor proc = null;
+        try {
+            proc = new CyfaceDataProcessor(fileInputStream, true);
+            proc.decompress();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        byte[] individualBytes = proc.getDecompressedBinaryAsArray();
+        System.out.println("uncompressed size: " + individualBytes.length);
+        System.out.println("geo: " + proc.getHeader().getNumberOfGeoLocations());
+        System.out.println("acc: " + proc.getHeader().getNumberOfAccelerations());
+        System.out.println("rot: " + proc.getHeader().getNumberOfRotations());
+        System.out.println("dir: " + proc.getHeader().getNumberOfDirections());
     }
 
     @Test
@@ -124,22 +144,18 @@ public class DecompressorTest {
         CyfaceDataProcessor proc = null;
         try {
             proc = new CyfaceDataProcessor(fileInputStream, true);
-            proc.uncompressAndPrepare();
+            proc.decompressAndPrepare();
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        byte[] individualBytes = proc.getUncompressedBinaryAsArray();
+        byte[] individualBytes = proc.getDecompressedBinaryAsArray();
         System.out.println("uncompressed size: " + individualBytes.length);
         System.out.println("geo: " + proc.getHeader().getNumberOfGeoLocations());
         System.out.println("acc: " + proc.getHeader().getNumberOfAccelerations());
         System.out.println("rot: " + proc.getHeader().getNumberOfRotations());
         System.out.println("dir: " + proc.getHeader().getNumberOfDirections());
 
-        // List<Map<String, ?>> geoLocs = proc.getLocationDataAsList(100);
-        // geoLocs.forEach(item -> {
-        // System.out.println(item.toString());
-        // });
     }
 
     private String convertTime(long time) {

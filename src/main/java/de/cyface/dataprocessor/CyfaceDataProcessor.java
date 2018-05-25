@@ -10,24 +10,23 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 import org.apache.commons.io.IOUtils;
 
-import de.cyface.synchronization.ByteSizes;
+import de.cyface.data.ByteSizes;
+import de.cyface.data.LocationPoint;
+import de.cyface.data.Point3D;
+import de.cyface.data.Point3D.TypePoint3D;
 
 /**
  * The CyfaceDataProcessor can be used to easily get Strings of human readable sensor data from the Cyface binary format
- * plain (.cyf) or compressed (.ccyf). It is optimized to use as less memory as possible. Therefore it uses the local
- * file system to create binary temp files for each sensor. Several functions allow to poll single sensor values from
- * those files as Map<String,?> Objects, which contain the human readable data for further processing.
+ * plain (.cyf) or compressed (.ccyf). It is optimized to use as less memory as possible. Therefore the local
+ * file system is utilized to create binary temp files for each sensor. Several functions allow to poll single sensor
+ * values from those files as Map<String,?> Objects, which contain the human readable data for further processing.
  * 
  * @author Philipp Grubitzsch
  *
@@ -35,15 +34,15 @@ import de.cyface.synchronization.ByteSizes;
 public class CyfaceDataProcessor {
 
     static final int DEFAULT_INFLATER_BYTE_BUF = 1024;
-    static final String UNCOMPRESS_FIRST_EXCEPTION = "Binary has to be uncompressed before other operations can be used.";
+    static final String DECOMPRESS_FIRST_EXCEPTION = "Binary has to be decompressed before other operations can be used.";
     static final String PREPARE_FIRST_EXCEPTION = "Binary has to be prepared before this operations can be used.";
     static final String NOT_SO_MANY_GEOLOCATIONS_EXCEPTION = "The requested number of geolocations is higher than the available geolocations. Read number of available geolocations from Header first.";
 
-    static final String TEMP_FOLDER = "uncompressed-temp/";
+    static final String TEMP_FOLDER = "decompressed-temp/";
 
     InputStream compressedBinaryInputStream;
-    FileOutputStream uncompressedBinaryOutputStream;
-    BufferedInputStream uncompressedBinaryInputStream;
+    FileOutputStream decompressedBinaryOutputStream;
+    BufferedInputStream decompressedBinaryInputStream;
     InflaterInputStream inflaterInputStream;
 
     // separate temporary file parts for each sensor type
@@ -52,19 +51,24 @@ public class CyfaceDataProcessor {
     File tempRotFile;
     File tempDirFile;
 
-    File uncompressedTempfile;
+    File decompressedTempfile;
 
-    private boolean uncompressed = false;
+    private boolean decompressed = false;
     private boolean prepared = false;
 
     /**
      * 
-     * @return True, if the data is already uncompressed.
+     * @return True, if the data is already decompressed.
      */
-    public boolean isUncompressed() {
-        return uncompressed;
+    public boolean isDecompressed() {
+        return decompressed;
     }
 
+    /**
+     * 
+     * @return True, if input is completely prepare for read out of sensor data. This include optional necessary
+     *         decompression, header readout and sensor data split.
+     */
     public boolean isPrepared() {
         return prepared;
     }
@@ -74,17 +78,17 @@ public class CyfaceDataProcessor {
     /**
      * Constructor for the Processor
      * 
-     * @param binaryInputStream the binary input either compressed or uncompressed
+     * @param binaryInputStream the binary input either compressed or decompressed
      * @param compressed flag to tell the processor if the binary input is compressed
      * @throws IOException
      */
     public CyfaceDataProcessor(InputStream binaryInputStream, boolean compressed) throws IOException {
-        this.uncompressedTempfile = new File(TEMP_FOLDER + UUID.randomUUID().toString());
-        this.uncompressedBinaryOutputStream = new FileOutputStream(uncompressedTempfile);
+        this.decompressedTempfile = new File(TEMP_FOLDER + UUID.randomUUID().toString());
+        this.decompressedBinaryOutputStream = new FileOutputStream(decompressedTempfile);
         if (!compressed) {
-            uncompressed = true;
-            IOUtils.copy(binaryInputStream, uncompressedBinaryOutputStream, 1024);
-            uncompressedBinaryInputStream = new BufferedInputStream(new FileInputStream(uncompressedTempfile));
+            decompressed = true;
+            IOUtils.copy(binaryInputStream, decompressedBinaryOutputStream, 1024);
+            decompressedBinaryInputStream = new BufferedInputStream(new FileInputStream(decompressedTempfile));
         } else {
             this.compressedBinaryInputStream = binaryInputStream;
         }
@@ -100,79 +104,40 @@ public class CyfaceDataProcessor {
      * @throws CyfaceCompressedDataProcessorException
      * @throws IOException
      */
-    public byte[] getUncompressedBinaryAsArray() throws CyfaceCompressedDataProcessorException, IOException {
-        checkUncompressedOrThrowException();
-        return Files.readAllBytes(uncompressedTempfile.toPath());
+    public byte[] getDecompressedBinaryAsArray() throws CyfaceCompressedDataProcessorException, IOException {
+        checkDecompressedOrThrowException();
+        return Files.readAllBytes(decompressedTempfile.toPath());
     }
 
     /**
-     * This method uncompress and prepare data to easily access arbitrary sensor data.
+     * This method decompress and prepare data to easily access arbitrary sensor data.
      * 
      * @return The instance of this specific Processor for fluently usage
      * @throws IOException
      * @throws CyfaceCompressedDataProcessorException
      */
-    public CyfaceDataProcessor uncompressAndPrepare() throws IOException, CyfaceCompressedDataProcessorException {
-        if (!uncompressed) {
-            Inflater decompressor = new Inflater();
-            this.inflaterInputStream = new InflaterInputStream(compressedBinaryInputStream, decompressor,
-                    DEFAULT_INFLATER_BYTE_BUF);
-
-            // byte[] buf = new byte[DEFAULT_INFLATER_BYTE_BUF];
-            // int bytesCount;
-            //
-            // // decompress in blocks of the set inflater buffer size and write to output
-            // while ((bytesCount = inflaterInputStream.read(buf, 0, DEFAULT_INFLATER_BYTE_BUF)) != -1) {
-            // decompressedBinaryOutputStream.write(buf, 0, bytesCount);
-            // }
-            IOUtils.copy(inflaterInputStream, uncompressedBinaryOutputStream, 1024);
-
-            // close streams after write out is done
-            uncompressedBinaryOutputStream.close();
-            compressedBinaryInputStream.close();
-            inflaterInputStream.close();
-            uncompressed = true;
-            uncompressedBinaryInputStream = new BufferedInputStream(new FileInputStream(uncompressedTempfile));
-        }
+    public CyfaceDataProcessor decompressAndPrepare() throws IOException, CyfaceCompressedDataProcessorException {
+        decompress();
         prepare();
         return this;
     }
 
-    /**
-     * 
-     * @param pointCount 0 to get all. Reader header first to get the max number of retrievable geo locations.
-     * @return
-     * @throws CyfaceCompressedDataProcessorException
-     * @throws IOException
-     */
-    @Deprecated
-    public List<Map<String, ?>> getLocationDataAsList(int pointCount)
-            throws CyfaceCompressedDataProcessorException, IOException {
-        checkUncompressedOrThrowException();
-        checkHeaderRead();
-        BufferedInputStream tempLocStream = new BufferedInputStream(new FileInputStream(tempLocFile), 4096);
-        byte[] locationBytes = null;
+    public CyfaceDataProcessor decompress() throws CyfaceCompressedDataProcessorException, IOException {
+        if (!decompressed) {
+            Inflater decompressor = new Inflater(true);
+            this.inflaterInputStream = new InflaterInputStream(compressedBinaryInputStream, decompressor,
+                    DEFAULT_INFLATER_BYTE_BUF);
 
-        // TODO this is not memory save in case of huge files
-        if (pointCount == 0) {
-            int locationBytesCount = header.getBeginOfAccelerationsIndex() - header.getBeginOfGeoLocationsIndex();
-            locationBytes = new byte[locationBytesCount];
-            int read = tempLocStream.read(locationBytes, 0, locationBytesCount);
-        } else {
+            IOUtils.copy(inflaterInputStream, decompressedBinaryOutputStream, 1024);
 
-            if (pointCount > header.getNumberOfGeoLocations()) {
-                throw new CyfaceCompressedDataProcessorException(NOT_SO_MANY_GEOLOCATIONS_EXCEPTION);
-            } else {
-                int bytesEnd = header.getBeginOfGeoLocationsIndex()
-                        + pointCount * ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY;
-                System.out.println("#" + (bytesEnd - header.getBeginOfGeoLocationsIndex()));
-                locationBytes = new byte[bytesEnd - header.getBeginOfGeoLocationsIndex()];
-                tempLocStream.read(locationBytes, 0, bytesEnd);
-            }
+            // close streams after write out is done
+            decompressedBinaryOutputStream.close();
+            compressedBinaryInputStream.close();
+            inflaterInputStream.close();
+            decompressed = true;
+            decompressedBinaryInputStream = new BufferedInputStream(new FileInputStream(decompressedTempfile));
         }
-
-        List<Map<String, ?>> geoLocations = deserializeGeoLocations(locationBytes);
-        return geoLocations;
+        return this;
     }
 
     BufferedInputStream tempLocStream;
@@ -184,7 +149,7 @@ public class CyfaceDataProcessor {
      * @throws CyfaceCompressedDataProcessorException
      * @throws IOException
      */
-    public Map<String, ?> pollNextLocationPoint() throws CyfaceCompressedDataProcessorException, IOException {
+    public LocationPoint pollNextLocationPoint() throws CyfaceCompressedDataProcessorException, IOException {
         checkPreparedOrThrowException();
         if (tempLocStream == null) {
             tempLocStream = new BufferedInputStream(new FileInputStream(tempLocFile),
@@ -193,7 +158,7 @@ public class CyfaceDataProcessor {
         byte[] locationBytes = new byte[ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY];
         int read = tempLocStream.read(locationBytes, 0, ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY);
         if (read != -1) {
-            return deserializeGeoLocations(locationBytes).get(0);
+            return deserializeGeoLocation(locationBytes);
         } else {
             tempLocStream.close();
             return null;
@@ -209,14 +174,14 @@ public class CyfaceDataProcessor {
      * @throws CyfaceCompressedDataProcessorException
      * @throws IOException
      */
-    public Map<String, ?> pollNextAccelerationPoint() throws CyfaceCompressedDataProcessorException, IOException {
+    public Point3D pollNextAccelerationPoint() throws CyfaceCompressedDataProcessorException, IOException {
         checkPreparedOrThrowException();
         if (tempAccStream == null) {
             tempAccStream = new BufferedInputStream(new FileInputStream(tempAccFile),
                     ByteSizes.BYTES_IN_ONE_POINT_ENTRY);
         }
 
-        Map<String, ?> nextPoint = pollNext3DPoint(tempAccStream);
+        Point3D nextPoint = pollNext3DPoint(tempAccStream, TypePoint3D.ACC);
         if (nextPoint == null) {
             tempAccStream.close();
         }
@@ -225,14 +190,14 @@ public class CyfaceDataProcessor {
 
     BufferedInputStream tempRotStream;
 
-    public Map<String, ?> pollNextRotationPoint() throws CyfaceCompressedDataProcessorException, IOException {
+    public Point3D pollNextRotationPoint() throws CyfaceCompressedDataProcessorException, IOException {
         checkPreparedOrThrowException();
         if (tempRotStream == null) {
             tempRotStream = new BufferedInputStream(new FileInputStream(tempRotFile),
                     ByteSizes.BYTES_IN_ONE_POINT_ENTRY);
         }
 
-        Map<String, ?> nextPoint = pollNext3DPoint(tempRotStream);
+        Point3D nextPoint = pollNext3DPoint(tempRotStream, TypePoint3D.ROT);
         if (nextPoint == null) {
             tempRotStream.close();
         }
@@ -241,34 +206,34 @@ public class CyfaceDataProcessor {
 
     BufferedInputStream tempDirStream;
 
-    public Map<String, ?> pollNextDirectionPoint() throws CyfaceCompressedDataProcessorException, IOException {
+    public Point3D pollNextDirectionPoint() throws CyfaceCompressedDataProcessorException, IOException {
         checkPreparedOrThrowException();
         if (tempDirStream == null) {
             tempDirStream = new BufferedInputStream(new FileInputStream(tempDirFile),
                     ByteSizes.BYTES_IN_ONE_POINT_ENTRY);
         }
 
-        Map<String, ?> nextPoint = pollNext3DPoint(tempDirStream);
+        Point3D nextPoint = pollNext3DPoint(tempDirStream, TypePoint3D.DIR);
         if (nextPoint == null) {
             tempDirStream.close();
         }
         return nextPoint;
     }
 
-    private Map<String, ?> pollNext3DPoint(BufferedInputStream bufInputStream) throws IOException {
+    private Point3D pollNext3DPoint(BufferedInputStream bufInputStream, TypePoint3D type) throws IOException {
         byte[] point3DBytes = new byte[ByteSizes.BYTES_IN_ONE_POINT_ENTRY];
         int read = bufInputStream.read(point3DBytes, 0, ByteSizes.BYTES_IN_ONE_POINT_ENTRY);
         if (read != -1) {
-            return deserializePoints3D(point3DBytes).get(0);
+            return deserializePoint3D(point3DBytes, type);
         } else {
             return null;
         }
     }
 
     private void readHeader() throws CyfaceCompressedDataProcessorException, IOException {
-        checkUncompressedOrThrowException();
+        checkDecompressedOrThrowException();
         byte[] individualBytes = new byte[18];
-        uncompressedBinaryInputStream.read(individualBytes, 0, 18);
+        decompressedBinaryInputStream.read(individualBytes, 0, 18);
 
         ByteBuffer buffer = ByteBuffer.wrap(individualBytes);
         this.header = new CyfaceBinaryHeader();
@@ -298,36 +263,36 @@ public class CyfaceDataProcessor {
         this.readHeader();
 
         // write out geo locations
-        tempLocFile = new File(uncompressedTempfile + "_loc");
+        tempLocFile = new File(decompressedTempfile + "_loc");
         FileOutputStream binLocationTemp = new FileOutputStream(tempLocFile);
         int locationBytesCount = header.getNumberOfGeoLocations() * ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY;
         System.out.println(locationBytesCount);
-        copyStream(uncompressedBinaryInputStream, binLocationTemp, 0, locationBytesCount);
+        copyStream(decompressedBinaryInputStream, binLocationTemp, 0, locationBytesCount);
         binLocationTemp.close();
 
         // write out accelerometer data
-        tempAccFile = new File(uncompressedTempfile + "_acc");
+        tempAccFile = new File(decompressedTempfile + "_acc");
         FileOutputStream binAccTemp = new FileOutputStream(tempAccFile);
         int accBytesCount = header.getNumberOfAccelerations() * ByteSizes.BYTES_IN_ONE_POINT_ENTRY;
-        copyStream(uncompressedBinaryInputStream, binAccTemp, 0, accBytesCount);
+        copyStream(decompressedBinaryInputStream, binAccTemp, 0, accBytesCount);
         binAccTemp.close();
 
         // write out rotation data
-        tempRotFile = new File(uncompressedTempfile + "_rot");
+        tempRotFile = new File(decompressedTempfile + "_rot");
         FileOutputStream binRotTemp = new FileOutputStream(tempRotFile);
         int rotBytesCount = header.getNumberOfRotations() * ByteSizes.BYTES_IN_ONE_POINT_ENTRY;
-        copyStream(uncompressedBinaryInputStream, binRotTemp, 0, rotBytesCount);
+        copyStream(decompressedBinaryInputStream, binRotTemp, 0, rotBytesCount);
         binRotTemp.close();
 
         // write out direction data
-        tempDirFile = new File(uncompressedTempfile + "_dir");
+        tempDirFile = new File(decompressedTempfile + "_dir");
         FileOutputStream binDirTemp = new FileOutputStream(tempDirFile);
         int dirBytesCount = ByteSizes.BYTES_IN_ONE_POINT_ENTRY * header.getNumberOfDirections();
-        copyStream(uncompressedBinaryInputStream, binRotTemp, 0, dirBytesCount);
+        copyStream(decompressedBinaryInputStream, binRotTemp, 0, dirBytesCount);
         binDirTemp.close();
 
         // close input stream
-        uncompressedBinaryInputStream.close();
+        decompressedBinaryInputStream.close();
 
         prepared = true;
     }
@@ -376,15 +341,15 @@ public class CyfaceDataProcessor {
         return header;
     }
 
-    private void checkUncompressedOrThrowException() throws CyfaceCompressedDataProcessorException {
-        if (!uncompressed) {
-            throw new CyfaceCompressedDataProcessorException(UNCOMPRESS_FIRST_EXCEPTION);
+    private void checkDecompressedOrThrowException() throws CyfaceCompressedDataProcessorException {
+        if (!decompressed) {
+            throw new CyfaceCompressedDataProcessorException(DECOMPRESS_FIRST_EXCEPTION);
         }
     }
 
     private void checkPreparedOrThrowException() throws CyfaceCompressedDataProcessorException {
         if (!prepared) {
-            throw new CyfaceCompressedDataProcessorException(UNCOMPRESS_FIRST_EXCEPTION);
+            throw new CyfaceCompressedDataProcessorException(DECOMPRESS_FIRST_EXCEPTION);
         }
     }
 
@@ -395,7 +360,7 @@ public class CyfaceDataProcessor {
     }
 
     /**
-     * Deserializes a list of 3D sample points (i.e. acceleration, rotation or direction) from an array of bytes in
+     * Deserializes a single 3D sample point (i.e. acceleration, rotation or direction) from an array of bytes in
      * Cyface binary format.
      *
      * @param bytes The bytes array to deserialize the sample points from.
@@ -403,46 +368,50 @@ public class CyfaceDataProcessor {
      *         with the corresponding values. A timestamp is a <code>long</code>, all other values are
      *         <code>double</code>.
      */
-    private List<Map<String, ?>> deserializePoints3D(byte[] bytes) {
-        List<Map<String, ?>> ret = new ArrayList<>();
+    private Point3D deserializePoint3D(byte[] bytes, TypePoint3D type) {
+        Point3D point3D = null;
 
         for (int i = 0; i < bytes.length; i += ByteSizes.BYTES_IN_ONE_POINT_ENTRY) {
             ByteBuffer buffer = ByteBuffer.wrap(Arrays.copyOfRange(bytes, i, i + ByteSizes.BYTES_IN_ONE_POINT_ENTRY));
-            Map<String, Object> entry = new HashMap<>(4);
-            entry.put("timestamp", buffer.getLong());
-            entry.put("x", buffer.getDouble());
-            entry.put("y", buffer.getDouble());
-            entry.put("z", buffer.getDouble());
 
-            ret.add(entry);
+            // readout order ist important, its a byte buffer dude
+            long timestamp = buffer.getLong();
+            double x = buffer.getDouble();
+            double y = buffer.getDouble();
+            double z = buffer.getDouble();
+
+            point3D = new Point3D(type, x, y, z, timestamp);
         }
 
-        return ret;
+        return point3D;
     }
 
     /**
-     * Deserializes a list of geo locations from an array of bytes in Cyface binary format.
+     * Deserializes a single geo location from an array of bytes in Cyface binary format.
      *
      * @param bytes The bytes array to deserialize the geo locations from.
      * @return A poor mans list of objects (i.e. <code>Map</code>). Each map contains 5 entrys keyed with "timestamp",
      *         "lat", "lon", "speed" and "accuracy" with the appropriate values. The timestamp is a <code>long</code>,
      *         accuracy is an <code>int</code> and all other values are <code>double</code> values.
      */
-    private List<Map<String, ?>> deserializeGeoLocations(byte[] bytes) {
-        List<Map<String, ?>> ret = new ArrayList<>();
+    private LocationPoint deserializeGeoLocation(byte[] bytes) {
+        LocationPoint locPoint = null;
+
         for (int i = 0; i < bytes.length; i += ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY) {
             ByteBuffer buffer = ByteBuffer
                     .wrap(Arrays.copyOfRange(bytes, i, i + ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY));
-            Map<String, Object> entry = new HashMap<>(5);
-            entry.put("timestamp", buffer.getLong());
-            entry.put("lat", buffer.getDouble());
-            entry.put("lon", buffer.getDouble());
-            entry.put("speed", buffer.getDouble());
-            entry.put("accuracy", buffer.getInt());
 
-            ret.add(entry);
+            // readout order ist important, its a byte buffer dude
+            long timestamp = buffer.getLong();
+            double latitude = buffer.getDouble();
+            double longitude = buffer.getDouble();
+            double speed = buffer.getDouble();
+            int accuracy = buffer.getInt();
+
+            locPoint = new LocationPoint(accuracy, longitude, latitude, speed, timestamp);
+
         }
-        return ret;
+        return locPoint;
     }
 
     public static class CyfaceCompressedDataProcessorException extends Exception {
@@ -460,13 +429,13 @@ public class CyfaceDataProcessor {
 
     @Override
     protected void finalize() throws Throwable {
-        File tempFile = uncompressedTempfile;
+        File tempFile = decompressedTempfile;
         if (tempFile.exists()) {
             tempFile.delete();
         }
         compressedBinaryInputStream.close();
-        uncompressedBinaryInputStream.close();
-        uncompressedBinaryOutputStream.close();
+        decompressedBinaryInputStream.close();
+        decompressedBinaryOutputStream.close();
         inflaterInputStream.close();
     }
 

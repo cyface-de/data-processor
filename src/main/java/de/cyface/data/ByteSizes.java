@@ -1,4 +1,4 @@
-package de.cyface.synchronization;
+package de.cyface.data;
 
 /**
  * This class encapsulates some constants required to serialize measurement data into the Cyface binary format.
