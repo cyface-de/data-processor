@@ -86,14 +86,14 @@ public class CyfaceDataProcessor implements Closeable {
      * @throws IOException
      */
     public CyfaceDataProcessor(InputStream binaryInputStream, boolean compressed) throws IOException {
-        this.uncompressedTempfile = new File(TEMP_FOLDER + UUID.randomUUID().toString());
-        this.uncompressedBinaryOutputStream = new FileOutputStream(uncompressedTempfile);
-        uncompressed = !compressed;
-        this.binaryInputStream = binaryInputStream;
         File tempFolder = new File(TEMP_FOLDER);
         if (!tempFolder.exists()) {
             tempFolder.mkdirs();
         }
+        this.uncompressedTempfile = new File(TEMP_FOLDER + UUID.randomUUID().toString());
+        this.uncompressedBinaryOutputStream = new FileOutputStream(uncompressedTempfile);
+        uncompressed = !compressed;
+        this.binaryInputStream = binaryInputStream;
     }
 
     /**
