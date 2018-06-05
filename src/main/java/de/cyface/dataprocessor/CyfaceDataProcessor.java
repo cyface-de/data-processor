@@ -120,6 +120,13 @@ public class CyfaceDataProcessor implements Closeable {
         return this;
     }
 
+    /**
+     * This method uncompress binary data.
+     * 
+     * @return The instance of this specific Processor for fluently usage
+     * @throws CyfaceCompressedDataProcessorException
+     * @throws IOException
+     */
     public CyfaceDataProcessor uncompress() throws CyfaceCompressedDataProcessorException, IOException {
         if (!uncompressed) {
             boolean nowrap = false;
@@ -220,6 +227,13 @@ public class CyfaceDataProcessor implements Closeable {
 
     BufferedInputStream tempRotStream;
 
+    /**
+     * Polls the next available rotation point from binary temp file
+     * 
+     * @return an rotation point or null, if all entries have been already read.
+     * @throws CyfaceCompressedDataProcessorException
+     * @throws IOException
+     */
     public Point3D pollNextRotationPoint() throws CyfaceCompressedDataProcessorException, IOException {
         checkPreparedOrThrowException();
         // no rot data
@@ -240,6 +254,13 @@ public class CyfaceDataProcessor implements Closeable {
 
     BufferedInputStream tempDirStream;
 
+    /**
+     * Polls the next available direction point from binary temp file
+     * 
+     * @return an direction point or null, if all entries have been already read.
+     * @throws CyfaceCompressedDataProcessorException
+     * @throws IOException
+     */
     public Point3D pollNextDirectionPoint() throws CyfaceCompressedDataProcessorException, IOException {
         checkPreparedOrThrowException();
         // no dir data
@@ -298,7 +319,7 @@ public class CyfaceDataProcessor implements Closeable {
      */
     private void prepare() throws CyfaceCompressedDataProcessorException, IOException {
         // read the header first.
-        this.readHeader();
+        getHeader();
 
         // write out geo locations
         tempLocFile = new File(uncompressedTempfile + "_loc");
@@ -375,9 +396,16 @@ public class CyfaceDataProcessor implements Closeable {
         }
     }
 
+    /**
+     * Get the Header. Requires isUncompressed() true.
+     * 
+     * @return the CyfaceBinaryHeader
+     * @throws CyfaceCompressedDataProcessorException
+     * @throws IOException
+     */
     public CyfaceBinaryHeader getHeader() throws CyfaceCompressedDataProcessorException, IOException {
         if (header == null) {
-            readHeader();
+            this.readHeader();
         }
 
         return header;
@@ -450,7 +478,7 @@ public class CyfaceDataProcessor implements Closeable {
         return locPoint;
     }
 
-    public static final class CyfaceCompressedDataProcessorException extends Exception {
+    protected static final class CyfaceCompressedDataProcessorException extends Exception {
 
         public CyfaceCompressedDataProcessorException(String message) {
             super(message);
