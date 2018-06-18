@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
@@ -86,6 +87,7 @@ public class CyfaceDataProcessor implements Closeable {
      * @throws IOException
      */
     public CyfaceDataProcessor(InputStream binaryInputStream, boolean compressed) throws IOException {
+        Objects.requireNonNull(binaryInputStream, "InputStream must not be null.");
         File tempFolder = new File(TEMP_FOLDER);
         if (!tempFolder.exists()) {
             tempFolder.mkdirs();
@@ -496,30 +498,39 @@ public class CyfaceDataProcessor implements Closeable {
         // TODO Auto-generated method stub
         try {
             // if given uncompressed, it can be null
-            binaryInputStream.close();
-            if (compressedBinaryInputStream != null) {
-                compressedBinaryInputStream.close();
-            }
-            // if given uncompressed, it can be null
-            if (inflaterInputStream != null) {
-                inflaterInputStream.close();
-            }
-            uncompressedBinaryInputStream.close();
-            uncompressedBinaryOutputStream.close();
-            tempLocStream.close();
-            tempAccStream.close();
-            tempRotStream.close();
-            tempDirStream.close();
+            closeStreamIfNotNull(binaryInputStream);
+            closeStreamIfNotNull(compressedBinaryInputStream);
+            closeStreamIfNotNull(inflaterInputStream);
+            closeStreamIfNotNull(uncompressedBinaryInputStream);
+            closeStreamIfNotNull(uncompressedBinaryOutputStream);
+            closeStreamIfNotNull(tempLocStream);
+            closeStreamIfNotNull(tempAccStream);
+            closeStreamIfNotNull(tempRotStream);
+            closeStreamIfNotNull(tempDirStream);
         } catch (IOException e) {
             // TODO Auto-generated catch block
             throw new RuntimeException("Could not close Stream, while trying to close DataProcessor.", e);
         }
 
-        if (!(uncompressedTempfile.delete() && tempLocFile.delete() && tempAccFile.delete() && tempRotFile.delete()
-                && tempDirFile.delete())) {
+        if (!(deleteFileIfNotNull(uncompressedTempfile) && deleteFileIfNotNull(tempLocFile)
+                && deleteFileIfNotNull(tempAccFile) && deleteFileIfNotNull(tempRotFile)
+                && deleteFileIfNotNull(tempDirFile))) {
             throw new RuntimeException("Could not delete all tempfiles.");
         }
 
+    }
+
+    private void closeStreamIfNotNull(Closeable closeable) throws IOException {
+        if (closeable != null) {
+            closeable.close();
+        }
+    }
+
+    private boolean deleteFileIfNotNull(File file) {
+        if (file != null) {
+            return file.delete();
+        } else
+            return true;
     }
 
 }
