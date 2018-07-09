@@ -117,7 +117,7 @@ public class CyfaceDataProcessorTest {
     @Ignore
     @Test
     public void testUncompressAndPrepareIOSData() throws CyfaceCompressedDataProcessorException, IOException {
-        fileInputStream = new FileInputStream(this.getClass().getResource("/iphone2.ccyf").getFile());
+        fileInputStream = new FileInputStream(this.getClass().getResource("/iphone-neu.ccyf").getFile());
         CyfaceDataProcessor proc = null;
         try {
             proc = new CyfaceDataProcessor(fileInputStream, true);
@@ -167,6 +167,8 @@ public class CyfaceDataProcessorTest {
 
     @After
     public void tearDown() throws IOException {
-        proc.close();
+        if (proc != null) {
+            proc.close();
+        }
     }
 }
