@@ -43,13 +43,14 @@ public class CyfaceDataProcessor implements Closeable {
 
     static final String TEMP_FOLDER = "uncompressed-temp/";
 
-    InputStream binaryInputStream;
+    // InputStream binaryInputStream;
     InputStream compressedBinaryInputStream;
     FileOutputStream uncompressedBinaryOutputStream;
     BufferedInputStream uncompressedBinaryInputStream;
     InflaterInputStream inflaterInputStream;
 
     // separate temporary file parts for each sensor type
+    File compressedTempfile;
     File tempLocFile;
     File tempAccFile;
     File tempRotFile;
@@ -93,9 +94,15 @@ public class CyfaceDataProcessor implements Closeable {
             tempFolder.mkdirs();
         }
         this.uncompressedTempfile = new File(TEMP_FOLDER + UUID.randomUUID().toString());
+        this.compressedTempfile = new File(TEMP_FOLDER + UUID.randomUUID().toString() + "_compressed");
+        OutputStream compressedTempFileOutputStream = new FileOutputStream(compressedTempfile);
+        IOUtils.copy(binaryInputStream, compressedTempFileOutputStream);
+        binaryInputStream.close();
+        compressedTempFileOutputStream.flush();
+        compressedTempFileOutputStream.close();
         this.uncompressedBinaryOutputStream = new FileOutputStream(uncompressedTempfile);
         uncompressed = !compressed;
-        this.binaryInputStream = binaryInputStream;
+        // this.binaryInputStream = binaryInputStream;
     }
 
     /**
@@ -130,12 +137,14 @@ public class CyfaceDataProcessor implements Closeable {
      * @throws IOException
      */
     public CyfaceDataProcessor uncompress() throws CyfaceCompressedDataProcessorException, IOException {
+        InputStream reader = null;
         if (!uncompressed) {
             boolean nowrap = false;
             boolean retry = true;
 
             while (retry && !uncompressed) {
-                this.compressedBinaryInputStream = new BufferedInputStream(binaryInputStream);
+                reader = new FileInputStream(compressedTempfile);
+                this.compressedBinaryInputStream = new BufferedInputStream(reader);
                 try {
                     uncompress(nowrap);
                     uncompressed = true;
@@ -149,17 +158,27 @@ public class CyfaceDataProcessor implements Closeable {
                         throw new CyfaceCompressedDataProcessorException(
                                 "Binary input could not be uncompressed: " + e1.getMessage());
                     }
+                } finally {
+                    if (reader != null) {
+                        reader.close();
+                    }
                 }
             }
+
             // close streams after write out is done
+            uncompressedBinaryOutputStream.flush();
             uncompressedBinaryOutputStream.close();
             compressedBinaryInputStream.close();
             inflaterInputStream.close();
 
             uncompressedBinaryInputStream = new BufferedInputStream(new FileInputStream(uncompressedTempfile));
         } else {
-            IOUtils.copy(binaryInputStream, uncompressedBinaryOutputStream, 1024);
+            reader = new FileInputStream(compressedTempfile);
+            IOUtils.copy(reader, uncompressedBinaryOutputStream, 1024);
             uncompressedBinaryInputStream = new BufferedInputStream(new FileInputStream(uncompressedTempfile));
+            if (reader != null) {
+                reader.close();
+            }
         }
 
         return this;
@@ -395,6 +414,7 @@ public class CyfaceDataProcessor implements Closeable {
                 output.write(buffer, 0, bytesRead);
                 totalRead += bytesRead;
             }
+            output.flush();
         }
     }
 
@@ -495,10 +515,9 @@ public class CyfaceDataProcessor implements Closeable {
 
     @Override
     public void close() {
-        // TODO Auto-generated method stub
         try {
             // if given uncompressed, it can be null
-            closeStreamIfNotNull(binaryInputStream);
+            // closeStreamIfNotNull(binaryInputStream);
             closeStreamIfNotNull(compressedBinaryInputStream);
             closeStreamIfNotNull(inflaterInputStream);
             closeStreamIfNotNull(uncompressedBinaryInputStream);
@@ -508,14 +527,18 @@ public class CyfaceDataProcessor implements Closeable {
             closeStreamIfNotNull(tempRotStream);
             closeStreamIfNotNull(tempDirStream);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             throw new RuntimeException("Could not close Stream, while trying to close DataProcessor.", e);
         }
 
-        if (!(deleteFileIfNotNull(uncompressedTempfile) && deleteFileIfNotNull(tempLocFile)
-                && deleteFileIfNotNull(tempAccFile) && deleteFileIfNotNull(tempRotFile)
-                && deleteFileIfNotNull(tempDirFile))) {
-            throw new RuntimeException("Could not delete all tempfiles.");
+        try {
+            deleteFileIfNotNull(uncompressedTempfile);
+            deleteFileIfNotNull(compressedTempfile);
+            deleteFileIfNotNull(tempLocFile);
+            deleteFileIfNotNull(tempAccFile);
+            deleteFileIfNotNull(tempRotFile);
+            deleteFileIfNotNull(tempDirFile);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not delete all tempfiles: " + e.getMessage());
         }
 
     }
@@ -526,11 +549,10 @@ public class CyfaceDataProcessor implements Closeable {
         }
     }
 
-    private boolean deleteFileIfNotNull(File file) {
+    private void deleteFileIfNotNull(File file) throws IOException {
         if (file != null) {
-            return file.delete();
-        } else
-            return true;
+            Files.delete(file.toPath());
+        }
     }
 
 }

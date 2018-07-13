@@ -12,7 +12,6 @@ import java.nio.ByteOrder;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import de.cyface.data.LocationPoint;
@@ -41,7 +40,7 @@ public class CyfaceDataProcessorTest {
             e.printStackTrace();
         }
 
-        printOutHeaderInfo(proc);
+        printOutHeaderInfoFromRawBinary(proc);
 
         byte[] individualBytes = proc.getUncompressedBinaryAsArray();
         assertEquals(individualBytes.length, 116398);
@@ -80,7 +79,7 @@ public class CyfaceDataProcessorTest {
             e.printStackTrace();
         }
 
-        printOutHeaderInfo(proc);
+        printOutHeaderInfoFromRawBinary(proc);
 
         byte[] individualBytes = proc.getUncompressedBinaryAsArray();
         assertEquals(116398, individualBytes.length);
@@ -109,16 +108,14 @@ public class CyfaceDataProcessorTest {
     }
 
     /**
-     * All iOS Data from SR-App seems to be corrupt at the moment.
      * 
      * @throws CyfaceCompressedDataProcessorException
      * @throws IOException
      */
-    @Ignore
+    // @Ignore
     @Test
     public void testUncompressAndPrepareIOSData() throws CyfaceCompressedDataProcessorException, IOException {
-        fileInputStream = new FileInputStream(this.getClass().getResource("/iphone-neu.ccyf").getFile());
-        CyfaceDataProcessor proc = null;
+        fileInputStream = new FileInputStream(this.getClass().getResource("/iphone-working.ccyf").getFile());
         try {
             proc = new CyfaceDataProcessor(fileInputStream, true);
             proc.uncompressAndPrepare();
@@ -127,12 +124,14 @@ public class CyfaceDataProcessorTest {
             e.printStackTrace();
         }
 
-        printOutHeaderInfo(proc);
+        printOutHeaderInfoFromRawBinary(proc);
 
-        printOutData(proc);
+        // printOutData(proc);
+        assertThat(proc.pollNextLocationPoint().toString(), is(equalTo(
+                "timestamp=1531214224003,lon=13.72905942612675,lat=51.05205897246585,speed=0.0,accuracy=1000")));
     }
 
-    private void printOutHeaderInfo(CyfaceDataProcessor proc)
+    private void printOutHeaderInfoFromRawBinary(CyfaceDataProcessor proc)
             throws CyfaceCompressedDataProcessorException, IOException {
         byte[] individualBytes = proc.getUncompressedBinaryAsArray();
         System.out.println("uncompressed size: " + individualBytes.length);
