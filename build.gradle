@@ -17,6 +17,9 @@ repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
     mavenCentral()
+    maven {
+        url mavenMovebisUrl
+    }
 }
 
 sourceCompatibility = 1.8
@@ -56,10 +59,10 @@ publishing {
     repositories {
         maven {
             // set in <user.home>/.gradle/gradle.properties
-            url mavenUrl
+            url mavenMovebisUrl
             credentials {
-                username mavenUser
-                password mavenPassword
+                username mavenMovebisUser
+                password mavenMovebisPassword
             }
         }
     }
