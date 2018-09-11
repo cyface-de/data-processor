@@ -142,6 +142,7 @@ public class CyfaceDataProcessorTest {
         System.out.println("dir: " + proc.getHeader().getNumberOfDirections());
     }
 
+    @SuppressWarnings("unused")
     private void printOutData(CyfaceDataProcessor proc) throws CyfaceCompressedDataProcessorException, IOException {
         LocationPoint locItem;
         while ((locItem = proc.pollNextLocationPoint()) != null) {
