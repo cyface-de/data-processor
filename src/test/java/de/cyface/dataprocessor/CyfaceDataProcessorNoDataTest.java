@@ -5,30 +5,31 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import de.cyface.dataprocessor.CyfaceDataProcessor.CyfaceCompressedDataProcessorException;
+import de.cyface.dataprocessor.AbstractCyfaceDataProcessor.CyfaceCompressedDataProcessorException;
+import de.cyface.dataprocessor.impl.CyfaceDataProcessorOnDiskImpl;
 
 public class CyfaceDataProcessorNoDataTest {
 
-    CyfaceDataProcessor oocut;
+    CyfaceDataProcessorOnDiskImpl oocut;
     FileInputStream fileInputStream;
 
     @Test(expected = NullPointerException.class)
     public void testNullInput() throws IOException {
-        oocut = new CyfaceDataProcessor(null, true);
-        oocut = new CyfaceDataProcessor(null, false);
+        oocut = new CyfaceDataProcessorOnDiskImpl(null, true);
+        oocut = new CyfaceDataProcessorOnDiskImpl(null, false);
         oocut.close();
     }
 
     @Test
     public void testNoSensorData() throws IOException, CyfaceCompressedDataProcessorException {
         fileInputStream = new FileInputStream(this.getClass().getResource("/nosensordata.ccyf").getFile());
-        oocut = new CyfaceDataProcessor(fileInputStream, true);
+        oocut = new CyfaceDataProcessorOnDiskImpl(fileInputStream, true);
         oocut.uncompress();
         printOutHeaderInfo(oocut);
         oocut.close();
     }
 
-    private void printOutHeaderInfo(CyfaceDataProcessor proc)
+    private void printOutHeaderInfo(CyfaceDataProcessorOnDiskImpl proc)
             throws CyfaceCompressedDataProcessorException, IOException {
         byte[] individualBytes = proc.getUncompressedBinaryAsArray();
         System.out.println("uncompressed size: " + individualBytes.length);
