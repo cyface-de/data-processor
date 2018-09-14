@@ -1,12 +1,19 @@
 package de.cyface.dataprocessor;
 
 import java.io.BufferedInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
+import java.util.zip.ZipException;
+
+import org.apache.commons.io.IOUtils;
 
 import de.cyface.data.ByteSizes;
 import de.cyface.data.LocationPoint;
@@ -17,11 +24,24 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
 
     static final String uncompress_FIRST_EXCEPTION = "Binary has to be uncompressed before other operations can be used.";
     static final String PREPARE_FIRST_EXCEPTION = "Binary has to be prepared before this operations can be used.";
+    static final int DEFAULT_INFLATER_BYTE_BUF = 4096;
 
     protected boolean uncompressed = false;
     protected boolean prepared = false;
     private CyfaceBinaryHeader header;
+    private InputStream binaryInputStream;
     protected InputStream uncompressedBinaryInputStream;
+    protected OutputStream uncompressedBinaryOutputStream;
+
+    protected InputStream compressedBinaryInputStream;
+
+    private InflaterInputStream inflaterInputStream;
+
+    public AbstractCyfaceDataProcessor(InputStream binaryInputStream, boolean compressed) {
+        Objects.requireNonNull(binaryInputStream, "InputStream must not be null.");
+        uncompressed = !compressed;
+        this.binaryInputStream = binaryInputStream;
+    }
 
     @Override
     public boolean isUncompressed() {
@@ -47,6 +67,69 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
         uncompress();
         prepare();
         return this;
+    }
+
+    protected abstract InputStream getCompressedInputStream();
+
+    protected abstract InputStream getUncompressedInputStream();
+
+    @Override
+    public ICyfaceDataProcessor uncompress() throws CyfaceCompressedDataProcessorException, IOException {
+        InputStream reader = null;
+        if (!uncompressed) {
+            boolean nowrap = false;
+            boolean retry = true;
+
+            while (retry && !uncompressed) {
+                reader = getCompressedInputStream();
+                this.compressedBinaryInputStream = new BufferedInputStream(reader);
+                try {
+                    uncompress(compressedBinaryInputStream, uncompressedBinaryOutputStream, nowrap);
+                    uncompressed = true;
+                    retry = false;
+                } catch (ZipException e1) {
+                    // binary input could be created with iOS, retry with nowrap option
+                    if (e1.getMessage().equals("incorrect header check")) {
+                        nowrap = true;
+                    } else {
+                        retry = false;
+                        throw new CyfaceCompressedDataProcessorException(
+                                "Binary input could not be uncompressed: " + e1.getMessage());
+                    }
+                } finally {
+                    if (reader != null) {
+                        reader.close();
+                    }
+                }
+            }
+
+            // close streams after write out is done
+            uncompressedBinaryOutputStream.flush();
+            uncompressedBinaryOutputStream.close();
+            compressedBinaryInputStream.close();
+            inflaterInputStream.close();
+
+            uncompressedBinaryInputStream = getUncompressedInputStream();
+        } else {
+            reader = getCompressedInputStream();
+            IOUtils.copy(reader, uncompressedBinaryOutputStream, 1024);
+            uncompressedBinaryInputStream = getUncompressedInputStream();
+            if (reader != null) {
+                reader.close();
+            }
+        }
+
+        return this;
+    }
+
+    protected void uncompress(InputStream compressedBinaryInputStream, OutputStream uncompressedBinaryOutputStream,
+            boolean nowrap) throws CyfaceCompressedDataProcessorException, IOException {
+
+        Inflater uncompressor = new Inflater(nowrap);
+        this.inflaterInputStream = new InflaterInputStream(compressedBinaryInputStream, uncompressor,
+                DEFAULT_INFLATER_BYTE_BUF);
+
+        IOUtils.copy(inflaterInputStream, uncompressedBinaryOutputStream, 4096);
     }
 
     /**
@@ -204,6 +287,24 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
     protected void checkPreparedOrThrowException() throws CyfaceCompressedDataProcessorException {
         if (!prepared) {
             throw new CyfaceCompressedDataProcessorException(uncompress_FIRST_EXCEPTION);
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        try {
+            closeStreamIfNotNull(inflaterInputStream);
+            closeStreamIfNotNull(compressedBinaryInputStream);
+            closeStreamIfNotNull(uncompressedBinaryInputStream);
+            closeStreamIfNotNull(uncompressedBinaryOutputStream);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not close Stream, while trying to close DataProcessor.", e);
+        }
+    }
+
+    protected void closeStreamIfNotNull(Closeable closeable) throws IOException {
+        if (closeable != null) {
+            closeable.close();
         }
     }
 

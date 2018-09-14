@@ -1,19 +1,15 @@
 package de.cyface.dataprocessor.impl;
 
 import java.io.BufferedInputStream;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
-import java.util.zip.ZipException;
 
 import org.apache.commons.io.IOUtils;
 
@@ -22,7 +18,6 @@ import de.cyface.data.LocationPoint;
 import de.cyface.data.Point3D;
 import de.cyface.data.Point3D.TypePoint3D;
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor;
-import de.cyface.dataprocessor.ICyfaceDataProcessor;
 
 /**
  * The CyfaceDataProcessor can be used to easily get Strings of human readable sensor data from the Cyface binary
@@ -36,15 +31,7 @@ import de.cyface.dataprocessor.ICyfaceDataProcessor;
  */
 public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {
 
-    static final int DEFAULT_INFLATER_BYTE_BUF = 4096;
-
     static final String TEMP_FOLDER = "uncompressed-temp/";
-
-    // InputStream binaryInputStream;
-    InputStream compressedBinaryInputStream;
-    FileOutputStream uncompressedBinaryOutputStream;
-
-    InflaterInputStream inflaterInputStream;
 
     // separate temporary file parts for each sensor type
     File compressedTempfile;
@@ -63,7 +50,8 @@ public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {
      * @throws IOException
      */
     public CyfaceDataProcessorOnDiskImpl(InputStream binaryInputStream, boolean compressed) throws IOException {
-        Objects.requireNonNull(binaryInputStream, "InputStream must not be null.");
+        super(binaryInputStream, compressed);
+
         File tempFolder = new File(TEMP_FOLDER);
         if (!tempFolder.exists()) {
             tempFolder.mkdirs();
@@ -76,73 +64,13 @@ public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {
         compressedTempFileOutputStream.flush();
         compressedTempFileOutputStream.close();
         this.uncompressedBinaryOutputStream = new FileOutputStream(uncompressedTempfile);
-        uncompressed = !compressed;
-        // this.binaryInputStream = binaryInputStream;
+
     }
 
     @Override
     public byte[] getUncompressedBinaryAsArray() throws CyfaceCompressedDataProcessorException, IOException {
         checkUncompressedOrThrowException();
         return Files.readAllBytes(uncompressedTempfile.toPath());
-    }
-
-    @Override
-    public ICyfaceDataProcessor uncompress() throws CyfaceCompressedDataProcessorException, IOException {
-        InputStream reader = null;
-        if (!uncompressed) {
-            boolean nowrap = false;
-            boolean retry = true;
-
-            while (retry && !uncompressed) {
-                reader = new FileInputStream(compressedTempfile);
-                this.compressedBinaryInputStream = new BufferedInputStream(reader);
-                try {
-                    uncompress(nowrap);
-                    uncompressed = true;
-                    retry = false;
-                } catch (ZipException e1) {
-                    // binary input could be created with iOS, retry with nowrap option
-                    if (e1.getMessage().equals("incorrect header check")) {
-                        nowrap = true;
-                    } else {
-                        retry = false;
-                        throw new CyfaceCompressedDataProcessorException(
-                                "Binary input could not be uncompressed: " + e1.getMessage());
-                    }
-                } finally {
-                    if (reader != null) {
-                        reader.close();
-                    }
-                }
-            }
-
-            // close streams after write out is done
-            uncompressedBinaryOutputStream.flush();
-            uncompressedBinaryOutputStream.close();
-            compressedBinaryInputStream.close();
-            inflaterInputStream.close();
-
-            uncompressedBinaryInputStream = new BufferedInputStream(new FileInputStream(uncompressedTempfile));
-        } else {
-            reader = new FileInputStream(compressedTempfile);
-            IOUtils.copy(reader, uncompressedBinaryOutputStream, 1024);
-            uncompressedBinaryInputStream = new BufferedInputStream(new FileInputStream(uncompressedTempfile));
-            if (reader != null) {
-                reader.close();
-            }
-        }
-
-        return this;
-    }
-
-    private void uncompress(boolean nowrap) throws CyfaceCompressedDataProcessorException, IOException {
-
-        Inflater uncompressor = new Inflater(nowrap);
-        this.inflaterInputStream = new InflaterInputStream(compressedBinaryInputStream, uncompressor,
-                DEFAULT_INFLATER_BYTE_BUF);
-
-        IOUtils.copy(inflaterInputStream, uncompressedBinaryOutputStream, 4096);
-
     }
 
     BufferedInputStream tempLocStream;
@@ -276,12 +204,10 @@ public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {
     @Override
     public void close() {
         try {
+            super.close();
             // if given uncompressed, it can be null
             // closeStreamIfNotNull(binaryInputStream);
-            closeStreamIfNotNull(compressedBinaryInputStream);
-            closeStreamIfNotNull(inflaterInputStream);
-            closeStreamIfNotNull(uncompressedBinaryInputStream);
-            closeStreamIfNotNull(uncompressedBinaryOutputStream);
+
             closeStreamIfNotNull(tempLocStream);
             closeStreamIfNotNull(tempAccStream);
             closeStreamIfNotNull(tempRotStream);
@@ -303,15 +229,31 @@ public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {
 
     }
 
-    private void closeStreamIfNotNull(Closeable closeable) throws IOException {
-        if (closeable != null) {
-            closeable.close();
-        }
-    }
-
     private void deleteFileIfNotNull(File file) throws IOException {
         if (file != null) {
             Files.delete(file.toPath());
+        }
+    }
+
+    @Override
+    protected InputStream getCompressedInputStream() {
+        try {
+            return new FileInputStream(compressedTempfile);
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    protected InputStream getUncompressedInputStream() {
+        try {
+            return new BufferedInputStream(new FileInputStream(uncompressedTempfile));
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
         }
     }
 
