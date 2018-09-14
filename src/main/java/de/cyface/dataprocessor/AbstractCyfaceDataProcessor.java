@@ -69,6 +69,65 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
         return this;
     }
 
+    protected abstract OutputStream getTempLocOutputStream();
+
+    protected abstract OutputStream getTempAccOutputStream();
+
+    protected abstract OutputStream getTempRotOutputStream();
+
+    protected abstract OutputStream getTempDirOutputStream();
+
+    /**
+     * Except for the header, split each part of the uncompressed input binary to a separate bin for easy separate
+     * access of arbitrary sensor data. The implementation depends on the type of CyfaceDataProcessor (e.g. file system
+     * or in-memory).
+     * 
+     * @throws IOException
+     * @throws CyfaceCompressedDataProcessorException
+     */
+    protected void prepare() throws CyfaceCompressedDataProcessorException, IOException {
+        // read the header first.
+        // getHeader();
+
+        // write out geo locations
+
+        OutputStream binLocationTemp = getTempLocOutputStream();
+        int locationBytesCount = this.getHeader().getNumberOfGeoLocations() * ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY;
+        copyStream(uncompressedBinaryInputStream, binLocationTemp, 0, locationBytesCount);
+        binLocationTemp.close();
+
+        // write out accelerometer data
+        if (this.getHeader().getNumberOfAccelerations() > 0) {
+
+            OutputStream binAccTemp = getTempAccOutputStream();
+            int accBytesCount = this.getHeader().getNumberOfAccelerations() * ByteSizes.BYTES_IN_ONE_POINT_ENTRY;
+            copyStream(uncompressedBinaryInputStream, binAccTemp, 0, accBytesCount);
+            binAccTemp.close();
+        }
+
+        // write out rotation data
+        if (this.getHeader().getNumberOfRotations() > 0) {
+
+            OutputStream binRotTemp = getTempRotOutputStream();
+            int rotBytesCount = this.getHeader().getNumberOfRotations() * ByteSizes.BYTES_IN_ONE_POINT_ENTRY;
+            copyStream(uncompressedBinaryInputStream, binRotTemp, 0, rotBytesCount);
+            binRotTemp.close();
+        }
+
+        // write out direction data
+        if (this.getHeader().getNumberOfDirections() > 0) {
+            OutputStream binDirTemp = getTempDirOutputStream();
+            int dirBytesCount = ByteSizes.BYTES_IN_ONE_POINT_ENTRY * this.getHeader().getNumberOfDirections();
+            copyStream(uncompressedBinaryInputStream, binDirTemp, 0, dirBytesCount);
+            binDirTemp.close();
+        }
+
+        // close input stream
+        uncompressedBinaryInputStream.close();
+
+        prepared = true;
+    }
+
     protected abstract InputStream getCompressedInputStream();
 
     protected abstract InputStream getUncompressedInputStream();
@@ -131,16 +190,6 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
 
         IOUtils.copy(inflaterInputStream, uncompressedBinaryOutputStream, DEFAULT_BYTE_BUF_SIZE);
     }
-
-    /**
-     * Except for the header, split each part of the uncompressed input binary to a separate bin for easy separate
-     * access of arbitrary sensor data. The implementation depends on the type of CyfaceDataProcessor (e.g. file system
-     * or in-memory).
-     * 
-     * @throws IOException
-     * @throws CyfaceCompressedDataProcessorException
-     */
-    protected abstract void prepare() throws CyfaceCompressedDataProcessorException, IOException;
 
     BufferedInputStream tempLocStream;
 

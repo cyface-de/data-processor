@@ -13,7 +13,6 @@ import java.util.UUID;
 
 import org.apache.commons.io.IOUtils;
 
-import de.cyface.data.ByteSizes;
 import de.cyface.data.LocationPoint;
 import de.cyface.data.Point3D;
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor;
@@ -69,52 +68,6 @@ public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {
     public byte[] getUncompressedBinaryAsArray() throws CyfaceCompressedDataProcessorException, IOException {
         checkUncompressedOrThrowException();
         return Files.readAllBytes(uncompressedTempfile.toPath());
-    }
-
-    @Override
-    protected void prepare() throws CyfaceCompressedDataProcessorException, IOException {
-        // read the header first.
-        // getHeader();
-
-        // write out geo locations
-        tempLocFile = new File(uncompressedTempfile + "_loc");
-        FileOutputStream binLocationTemp = new FileOutputStream(tempLocFile);
-        int locationBytesCount = this.getHeader().getNumberOfGeoLocations() * ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY;
-        copyStream(uncompressedBinaryInputStream, binLocationTemp, 0, locationBytesCount);
-        binLocationTemp.close();
-
-        // write out accelerometer data
-        if (this.getHeader().getNumberOfAccelerations() > 0) {
-
-            tempAccFile = new File(uncompressedTempfile + "_acc");
-            FileOutputStream binAccTemp = new FileOutputStream(tempAccFile);
-            int accBytesCount = this.getHeader().getNumberOfAccelerations() * ByteSizes.BYTES_IN_ONE_POINT_ENTRY;
-            copyStream(uncompressedBinaryInputStream, binAccTemp, 0, accBytesCount);
-            binAccTemp.close();
-        }
-
-        // write out rotation data
-        if (this.getHeader().getNumberOfRotations() > 0) {
-            tempRotFile = new File(uncompressedTempfile + "_rot");
-            FileOutputStream binRotTemp = new FileOutputStream(tempRotFile);
-            int rotBytesCount = this.getHeader().getNumberOfRotations() * ByteSizes.BYTES_IN_ONE_POINT_ENTRY;
-            copyStream(uncompressedBinaryInputStream, binRotTemp, 0, rotBytesCount);
-            binRotTemp.close();
-        }
-
-        // write out direction data
-        if (this.getHeader().getNumberOfDirections() > 0) {
-            tempDirFile = new File(uncompressedTempfile + "_dir");
-            FileOutputStream binDirTemp = new FileOutputStream(tempDirFile);
-            int dirBytesCount = ByteSizes.BYTES_IN_ONE_POINT_ENTRY * this.getHeader().getNumberOfDirections();
-            copyStream(uncompressedBinaryInputStream, binDirTemp, 0, dirBytesCount);
-            binDirTemp.close();
-        }
-
-        // close input stream
-        uncompressedBinaryInputStream.close();
-
-        prepared = true;
     }
 
     @Override
@@ -210,6 +163,54 @@ public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {
         // TODO Auto-generated method stub
         try {
             return new FileInputStream(tempDirFile);
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    protected OutputStream getTempLocOutputStream() {
+        tempLocFile = new File(uncompressedTempfile + "_loc");
+        try {
+            return new FileOutputStream(tempLocFile);
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    protected OutputStream getTempAccOutputStream() {
+        tempAccFile = new File(uncompressedTempfile + "_acc");
+        try {
+            return new FileOutputStream(tempAccFile);
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    protected OutputStream getTempRotOutputStream() {
+        tempRotFile = new File(uncompressedTempfile + "_rot");
+        try {
+            return new FileOutputStream(tempRotFile);
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    protected OutputStream getTempDirOutputStream() {
+        tempDirFile = new File(uncompressedTempfile + "_dir");
+        try {
+            return new FileOutputStream(tempDirFile);
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

@@ -1,60 +1,45 @@
 package de.cyface.dataprocessor.impl;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
-import de.cyface.data.LocationPoint;
-import de.cyface.data.Point3D;
+import org.apache.commons.io.IOUtils;
+
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor;
-import de.cyface.dataprocessor.ICyfaceDataProcessor;
 
 public class CyfaceDataProcessorInMemoryImpl extends AbstractCyfaceDataProcessor {
 
+    // separate temporary byte array parts for each sensor type
+    byte[] compressedTempBin;
+    byte[] tempLocBin;
+    byte[] tempAccBin;
+    byte[] tempRotBin;
+    byte[] tempDirBin;
+
+    byte[] uncompressedTempBin;
+
     public CyfaceDataProcessorInMemoryImpl(InputStream binaryInputStream, boolean compressed) {
         super(binaryInputStream, compressed);
+        try {
+            this.compressedTempBin = IOUtils.toByteArray(binaryInputStream);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         // TODO Auto-generated constructor stub
     }
 
     @Override
     public byte[] getUncompressedBinaryAsArray() throws CyfaceCompressedDataProcessorException, IOException {
         // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public ICyfaceDataProcessor uncompress() throws CyfaceCompressedDataProcessorException, IOException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public LocationPoint pollNextLocationPoint() throws CyfaceCompressedDataProcessorException, IOException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Point3D pollNextAccelerationPoint() throws CyfaceCompressedDataProcessorException, IOException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Point3D pollNextRotationPoint() throws CyfaceCompressedDataProcessorException, IOException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Point3D pollNextDirectionPoint() throws CyfaceCompressedDataProcessorException, IOException {
-        // TODO Auto-generated method stub
-        return null;
+        return uncompressedTempBin;
     }
 
     @Override
     public void close() throws IOException {
-        // TODO Auto-generated method stub
-
+        super.close();
     }
 
     @Override
@@ -66,35 +51,59 @@ public class CyfaceDataProcessorInMemoryImpl extends AbstractCyfaceDataProcessor
     @Override
     protected InputStream getCompressedInputStream() {
         // TODO Auto-generated method stub
-        return null;
+        return new ByteArrayInputStream(compressedTempBin);
     }
 
     @Override
     protected InputStream getUncompressedInputStream() {
         // TODO Auto-generated method stub
-        return null;
+        return new ByteArrayInputStream(uncompressedTempBin);
     }
 
     @Override
     protected InputStream getSpecificLocInputStream() {
         // TODO Auto-generated method stub
-        return null;
+        return new ByteArrayInputStream(tempLocBin);
     }
 
     @Override
     protected InputStream getSpecificAccInputStream() {
         // TODO Auto-generated method stub
-        return null;
+        return new ByteArrayInputStream(tempAccBin);
     }
 
     @Override
     protected InputStream getSpecificRotInputStream() {
         // TODO Auto-generated method stub
-        return null;
+        return new ByteArrayInputStream(tempRotBin);
     }
 
     @Override
     protected InputStream getSpecificDirInputStream() {
+        // TODO Auto-generated method stub
+        return new ByteArrayInputStream(tempDirBin);
+    }
+
+    @Override
+    protected OutputStream getTempLocOutputStream() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    protected OutputStream getTempAccOutputStream() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    protected OutputStream getTempRotOutputStream() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    protected OutputStream getTempDirOutputStream() {
         // TODO Auto-generated method stub
         return null;
     }
