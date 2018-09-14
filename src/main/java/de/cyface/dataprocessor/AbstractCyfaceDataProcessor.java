@@ -24,7 +24,7 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
 
     static final String uncompress_FIRST_EXCEPTION = "Binary has to be uncompressed before other operations can be used.";
     static final String PREPARE_FIRST_EXCEPTION = "Binary has to be prepared before this operations can be used.";
-    static final int DEFAULT_INFLATER_BYTE_BUF = 4096;
+    static final int DEFAULT_BYTE_BUF_SIZE = 4096;
 
     protected boolean uncompressed = false;
     protected boolean prepared = false;
@@ -127,9 +127,9 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
 
         Inflater uncompressor = new Inflater(nowrap);
         this.inflaterInputStream = new InflaterInputStream(compressedBinaryInputStream, uncompressor,
-                DEFAULT_INFLATER_BYTE_BUF);
+                DEFAULT_BYTE_BUF_SIZE);
 
-        IOUtils.copy(inflaterInputStream, uncompressedBinaryOutputStream, 4096);
+        IOUtils.copy(inflaterInputStream, uncompressedBinaryOutputStream, DEFAULT_BYTE_BUF_SIZE);
     }
 
     /**
@@ -141,6 +141,98 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
      * @throws CyfaceCompressedDataProcessorException
      */
     protected abstract void prepare() throws CyfaceCompressedDataProcessorException, IOException;
+
+    BufferedInputStream tempLocStream;
+
+    protected abstract InputStream getSpecificLocInputStream();
+
+    @Override
+    public LocationPoint pollNextLocationPoint() throws CyfaceCompressedDataProcessorException, IOException {
+        checkPreparedOrThrowException();
+
+        if (tempLocStream == null) {
+            tempLocStream = new BufferedInputStream(getSpecificLocInputStream(),
+                    ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY);
+        }
+        byte[] locationBytes = new byte[ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY];
+        int read = tempLocStream.read(locationBytes, 0, ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY);
+        if (read != -1) {
+            return deserializeGeoLocation(locationBytes);
+        } else {
+            tempLocStream.close();
+            return null;
+        }
+    }
+
+    BufferedInputStream tempAccStream;
+
+    protected abstract InputStream getSpecificAccInputStream();
+
+    @Override
+    public Point3D pollNextAccelerationPoint() throws CyfaceCompressedDataProcessorException, IOException {
+        checkPreparedOrThrowException();
+        // no acc data
+        InputStream specAccInputStream = getSpecificAccInputStream();
+        if (specAccInputStream == null) {
+            return null;
+        }
+        if (tempAccStream == null) {
+            tempAccStream = new BufferedInputStream(specAccInputStream, ByteSizes.BYTES_IN_ONE_POINT_ENTRY);
+        }
+
+        Point3D nextPoint = pollNext3DPoint(tempAccStream, TypePoint3D.ACC);
+        if (nextPoint == null) {
+            tempAccStream.close();
+        }
+        return nextPoint;
+    }
+
+    BufferedInputStream tempRotStream;
+
+    protected abstract InputStream getSpecificRotInputStream();
+
+    @Override
+    public Point3D pollNextRotationPoint() throws CyfaceCompressedDataProcessorException, IOException {
+        checkPreparedOrThrowException();
+        // no rot data
+
+        InputStream specificRotInputStream = getSpecificRotInputStream();
+        if (specificRotInputStream == null) {
+            return null;
+        }
+        if (tempRotStream == null) {
+            tempRotStream = new BufferedInputStream(specificRotInputStream, ByteSizes.BYTES_IN_ONE_POINT_ENTRY);
+        }
+
+        Point3D nextPoint = pollNext3DPoint(tempRotStream, TypePoint3D.ROT);
+        if (nextPoint == null) {
+            tempRotStream.close();
+        }
+        return nextPoint;
+    }
+
+    BufferedInputStream tempDirStream;
+
+    protected abstract InputStream getSpecificDirInputStream();
+
+    @Override
+    public Point3D pollNextDirectionPoint() throws CyfaceCompressedDataProcessorException, IOException {
+        checkPreparedOrThrowException();
+        // no dir data
+        InputStream specificDirInputStream = getSpecificDirInputStream();
+        if (specificDirInputStream == null) {
+            return null;
+        }
+        if (tempDirStream == null) {
+            tempDirStream = new BufferedInputStream(specificDirInputStream, ByteSizes.BYTES_IN_ONE_POINT_ENTRY);
+        }
+
+        Point3D nextPoint = pollNext3DPoint(tempDirStream, TypePoint3D.DIR);
+        if (nextPoint == null) {
+            tempDirStream.close();
+        }
+        return nextPoint;
+    }
 
     /**
      * Deserializes a single geo location from an array of bytes in Cyface binary format.
@@ -211,14 +303,13 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
             final long end) throws IOException {
         for (int i = 0; i < start; i++)
             input.read(); // dispose of the unwanted bytes
-        int bufferSize = 4096;
-        byte[] buffer = new byte[bufferSize]; // Adjust if you want
+        byte[] buffer = new byte[DEFAULT_BYTE_BUF_SIZE]; // Adjust if you want
         int bytesRead;
         long totalRead = 0;
         boolean done = false;
         while (!done) // test for EOF or end reached
         {
-            if ((totalRead + bufferSize) >= end) {
+            if ((totalRead + DEFAULT_BYTE_BUF_SIZE) >= end) {
                 int lastReadBuf = (int)(end - totalRead);
                 byte[] lastBuf = new byte[lastReadBuf];
                 output.write(lastBuf, 0, input.read(lastBuf));
@@ -297,6 +388,11 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
             closeStreamIfNotNull(compressedBinaryInputStream);
             closeStreamIfNotNull(uncompressedBinaryInputStream);
             closeStreamIfNotNull(uncompressedBinaryOutputStream);
+
+            closeStreamIfNotNull(tempLocStream);
+            closeStreamIfNotNull(tempAccStream);
+            closeStreamIfNotNull(tempRotStream);
+            closeStreamIfNotNull(tempDirStream);
         } catch (IOException e) {
             throw new RuntimeException("Could not close Stream, while trying to close DataProcessor.", e);
         }

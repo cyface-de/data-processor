@@ -75,4 +75,28 @@ public class CyfaceDataProcessorInMemoryImpl extends AbstractCyfaceDataProcessor
         return null;
     }
 
+    @Override
+    protected InputStream getSpecificLocInputStream() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    protected InputStream getSpecificAccInputStream() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    protected InputStream getSpecificRotInputStream() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    protected InputStream getSpecificDirInputStream() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
 }

@@ -16,7 +16,6 @@ import org.apache.commons.io.IOUtils;
 import de.cyface.data.ByteSizes;
 import de.cyface.data.LocationPoint;
 import de.cyface.data.Point3D;
-import de.cyface.data.Point3D.TypePoint3D;
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor;
 
 /**
@@ -64,95 +63,12 @@ public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {
         compressedTempFileOutputStream.flush();
         compressedTempFileOutputStream.close();
         this.uncompressedBinaryOutputStream = new FileOutputStream(uncompressedTempfile);
-
     }
 
     @Override
     public byte[] getUncompressedBinaryAsArray() throws CyfaceCompressedDataProcessorException, IOException {
         checkUncompressedOrThrowException();
         return Files.readAllBytes(uncompressedTempfile.toPath());
-    }
-
-    BufferedInputStream tempLocStream;
-
-    @Override
-    public LocationPoint pollNextLocationPoint() throws CyfaceCompressedDataProcessorException, IOException {
-        checkPreparedOrThrowException();
-        if (tempLocStream == null) {
-            tempLocStream = new BufferedInputStream(new FileInputStream(tempLocFile),
-                    ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY);
-        }
-        byte[] locationBytes = new byte[ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY];
-        int read = tempLocStream.read(locationBytes, 0, ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY);
-        if (read != -1) {
-            return deserializeGeoLocation(locationBytes);
-        } else {
-            tempLocStream.close();
-            return null;
-        }
-    }
-
-    BufferedInputStream tempAccStream;
-
-    @Override
-    public Point3D pollNextAccelerationPoint() throws CyfaceCompressedDataProcessorException, IOException {
-        checkPreparedOrThrowException();
-        // no acc data
-        if (tempAccFile == null) {
-            return null;
-        }
-        if (tempAccStream == null) {
-            tempAccStream = new BufferedInputStream(new FileInputStream(tempAccFile),
-                    ByteSizes.BYTES_IN_ONE_POINT_ENTRY);
-        }
-
-        Point3D nextPoint = pollNext3DPoint(tempAccStream, TypePoint3D.ACC);
-        if (nextPoint == null) {
-            tempAccStream.close();
-        }
-        return nextPoint;
-    }
-
-    BufferedInputStream tempRotStream;
-
-    @Override
-    public Point3D pollNextRotationPoint() throws CyfaceCompressedDataProcessorException, IOException {
-        checkPreparedOrThrowException();
-        // no rot data
-        if (tempRotFile == null) {
-            return null;
-        }
-        if (tempRotStream == null) {
-            tempRotStream = new BufferedInputStream(new FileInputStream(tempRotFile),
-                    ByteSizes.BYTES_IN_ONE_POINT_ENTRY);
-        }
-
-        Point3D nextPoint = pollNext3DPoint(tempRotStream, TypePoint3D.ROT);
-        if (nextPoint == null) {
-            tempRotStream.close();
-        }
-        return nextPoint;
-    }
-
-    BufferedInputStream tempDirStream;
-
-    @Override
-    public Point3D pollNextDirectionPoint() throws CyfaceCompressedDataProcessorException, IOException {
-        checkPreparedOrThrowException();
-        // no dir data
-        if (tempDirFile == null) {
-            return null;
-        }
-        if (tempDirStream == null) {
-            tempDirStream = new BufferedInputStream(new FileInputStream(tempDirFile),
-                    ByteSizes.BYTES_IN_ONE_POINT_ENTRY);
-        }
-
-        Point3D nextPoint = pollNext3DPoint(tempDirStream, TypePoint3D.DIR);
-        if (nextPoint == null) {
-            tempDirStream.close();
-        }
-        return nextPoint;
     }
 
     @Override
@@ -208,10 +124,6 @@ public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {
             // if given uncompressed, it can be null
             // closeStreamIfNotNull(binaryInputStream);
 
-            closeStreamIfNotNull(tempLocStream);
-            closeStreamIfNotNull(tempAccStream);
-            closeStreamIfNotNull(tempRotStream);
-            closeStreamIfNotNull(tempDirStream);
         } catch (IOException e) {
             throw new RuntimeException("Could not close Stream, while trying to close DataProcessor.", e);
         }
@@ -250,6 +162,54 @@ public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {
     protected InputStream getUncompressedInputStream() {
         try {
             return new BufferedInputStream(new FileInputStream(uncompressedTempfile));
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    protected InputStream getSpecificAccInputStream() {
+        // TODO Auto-generated method stub
+        try {
+            return new FileInputStream(tempAccFile);
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    protected InputStream getSpecificLocInputStream() {
+        // TODO Auto-generated method stub
+        try {
+            return new FileInputStream(tempLocFile);
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    protected InputStream getSpecificRotInputStream() {
+        // TODO Auto-generated method stub
+        try {
+            return new FileInputStream(tempRotFile);
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    protected InputStream getSpecificDirInputStream() {
+        // TODO Auto-generated method stub
+        try {
+            return new FileInputStream(tempDirFile);
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
