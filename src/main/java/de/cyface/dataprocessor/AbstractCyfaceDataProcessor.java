@@ -29,7 +29,7 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
     protected boolean uncompressed = false;
     protected boolean prepared = false;
     private CyfaceBinaryHeader header;
-    private InputStream binaryInputStream;
+
     protected InputStream uncompressedBinaryInputStream;
     protected OutputStream uncompressedBinaryOutputStream;
 
@@ -40,7 +40,6 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
     public AbstractCyfaceDataProcessor(InputStream binaryInputStream, boolean compressed) {
         Objects.requireNonNull(binaryInputStream, "InputStream must not be null.");
         uncompressed = !compressed;
-        this.binaryInputStream = binaryInputStream;
     }
 
     @Override

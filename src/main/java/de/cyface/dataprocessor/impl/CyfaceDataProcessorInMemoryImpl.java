@@ -1,6 +1,7 @@
 package de.cyface.dataprocessor.impl;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -13,17 +14,19 @@ public class CyfaceDataProcessorInMemoryImpl extends AbstractCyfaceDataProcessor
 
     // separate temporary byte array parts for each sensor type
     byte[] compressedTempBin;
-    byte[] tempLocBin;
-    byte[] tempAccBin;
-    byte[] tempRotBin;
-    byte[] tempDirBin;
+    ByteArrayOutputStream tempLocBin;
+    ByteArrayOutputStream tempAccBin;
+    ByteArrayOutputStream tempRotBin;
+    ByteArrayOutputStream tempDirBin;
 
-    byte[] uncompressedTempBin;
+    ByteArrayOutputStream uncompressedTempBin;
 
     public CyfaceDataProcessorInMemoryImpl(InputStream binaryInputStream, boolean compressed) {
         super(binaryInputStream, compressed);
         try {
             this.compressedTempBin = IOUtils.toByteArray(binaryInputStream);
+            this.uncompressedTempBin = new ByteArrayOutputStream();
+            this.uncompressedBinaryOutputStream = uncompressedTempBin;
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -34,7 +37,7 @@ public class CyfaceDataProcessorInMemoryImpl extends AbstractCyfaceDataProcessor
     @Override
     public byte[] getUncompressedBinaryAsArray() throws CyfaceCompressedDataProcessorException, IOException {
         // TODO Auto-generated method stub
-        return uncompressedTempBin;
+        return uncompressedTempBin.toByteArray();
     }
 
     @Override
@@ -43,69 +46,58 @@ public class CyfaceDataProcessorInMemoryImpl extends AbstractCyfaceDataProcessor
     }
 
     @Override
-    protected void prepare() throws CyfaceCompressedDataProcessorException, IOException {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
     protected InputStream getCompressedInputStream() {
-        // TODO Auto-generated method stub
         return new ByteArrayInputStream(compressedTempBin);
     }
 
     @Override
     protected InputStream getUncompressedInputStream() {
-        // TODO Auto-generated method stub
-        return new ByteArrayInputStream(uncompressedTempBin);
+        return new ByteArrayInputStream(uncompressedTempBin.toByteArray());
     }
 
     @Override
     protected InputStream getSpecificLocInputStream() {
-        // TODO Auto-generated method stub
-        return new ByteArrayInputStream(tempLocBin);
+        return new ByteArrayInputStream(tempLocBin.toByteArray());
     }
 
     @Override
     protected InputStream getSpecificAccInputStream() {
         // TODO Auto-generated method stub
-        return new ByteArrayInputStream(tempAccBin);
+        return new ByteArrayInputStream(tempAccBin.toByteArray());
     }
 
     @Override
     protected InputStream getSpecificRotInputStream() {
-        // TODO Auto-generated method stub
-        return new ByteArrayInputStream(tempRotBin);
+        return new ByteArrayInputStream(tempRotBin.toByteArray());
     }
 
     @Override
     protected InputStream getSpecificDirInputStream() {
-        // TODO Auto-generated method stub
-        return new ByteArrayInputStream(tempDirBin);
+        return new ByteArrayInputStream(tempDirBin.toByteArray());
     }
 
     @Override
     protected OutputStream getTempLocOutputStream() {
-        // TODO Auto-generated method stub
-        return null;
+        this.tempLocBin = new ByteArrayOutputStream();
+        return tempLocBin;
     }
 
     @Override
     protected OutputStream getTempAccOutputStream() {
-        // TODO Auto-generated method stub
-        return null;
+        this.tempAccBin = new ByteArrayOutputStream();
+        return tempAccBin;
     }
 
     @Override
     protected OutputStream getTempRotOutputStream() {
-        // TODO Auto-generated method stub
-        return null;
+        this.tempRotBin = new ByteArrayOutputStream();
+        return tempRotBin;
     }
 
     @Override
     protected OutputStream getTempDirOutputStream() {
-        // TODO Auto-generated method stub
-        return null;
+        this.tempDirBin = new ByteArrayOutputStream();
+        return tempDirBin;
     }
 
 }

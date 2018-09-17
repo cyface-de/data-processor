@@ -8,7 +8,7 @@ import org.junit.Test;
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor.CyfaceCompressedDataProcessorException;
 import de.cyface.dataprocessor.impl.CyfaceDataProcessorOnDiskImpl;
 
-public class CyfaceDataProcessorNoDataTest {
+public class CyfaceDataProcessorOnDiskNoDataTest {
 
     CyfaceDataProcessorOnDiskImpl oocut;
     FileInputStream fileInputStream;

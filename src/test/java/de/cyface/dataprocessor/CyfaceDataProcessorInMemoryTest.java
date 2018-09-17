@@ -17,12 +17,13 @@ import org.junit.Test;
 import de.cyface.data.LocationPoint;
 import de.cyface.data.Point3D;
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor.CyfaceCompressedDataProcessorException;
+import de.cyface.dataprocessor.impl.CyfaceDataProcessorInMemoryImpl;
 import de.cyface.dataprocessor.impl.CyfaceDataProcessorOnDiskImpl;
 
-public class CyfaceDataProcessorTest {
+public class CyfaceDataProcessorInMemoryTest {
 
     FileInputStream fileInputStream;
-    CyfaceDataProcessorOnDiskImpl proc = null;
+    CyfaceDataProcessorInMemoryImpl proc = null;
 
     @Before
     public void setUp() throws IOException {
@@ -34,7 +35,7 @@ public class CyfaceDataProcessorTest {
         fileInputStream = new FileInputStream(this.getClass().getResource("/compressedCyfaceData").getFile());
 
         try {
-            proc = new CyfaceDataProcessorOnDiskImpl(fileInputStream, true);
+            proc = new CyfaceDataProcessorInMemoryImpl(fileInputStream, true);
             proc.uncompressAndPrepare();
         } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -73,7 +74,7 @@ public class CyfaceDataProcessorTest {
     public void testDeserializeUncompressedCyfaceData() throws CyfaceCompressedDataProcessorException, IOException {
         fileInputStream = new FileInputStream(this.getClass().getResource("/uncompressed.cyf").getFile());
         try {
-            proc = new CyfaceDataProcessorOnDiskImpl(fileInputStream, false);
+            proc = new CyfaceDataProcessorInMemoryImpl(fileInputStream, false);
             proc.uncompressAndPrepare();
         } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -118,7 +119,7 @@ public class CyfaceDataProcessorTest {
     public void testUncompressAndPrepareIOSData() throws CyfaceCompressedDataProcessorException, IOException {
         fileInputStream = new FileInputStream(this.getClass().getResource("/iphone-working.ccyf").getFile());
         try {
-            proc = new CyfaceDataProcessorOnDiskImpl(fileInputStream, true);
+            proc = new CyfaceDataProcessorInMemoryImpl(fileInputStream, true);
             proc.uncompressAndPrepare();
         } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -132,7 +133,7 @@ public class CyfaceDataProcessorTest {
                 "timestamp=1531214224003,lon=13.72905942612675,lat=51.05205897246585,speed=0.0,accuracy=1000")));
     }
 
-    private void printOutHeaderInfoFromRawBinary(CyfaceDataProcessorOnDiskImpl proc)
+    private void printOutHeaderInfoFromRawBinary(ICyfaceDataProcessor proc)
             throws CyfaceCompressedDataProcessorException, IOException {
         byte[] individualBytes = proc.getUncompressedBinaryAsArray();
         System.out.println("uncompressed size: " + individualBytes.length);
@@ -144,7 +145,8 @@ public class CyfaceDataProcessorTest {
     }
 
     @SuppressWarnings("unused")
-    private void printOutData(CyfaceDataProcessorOnDiskImpl proc) throws CyfaceCompressedDataProcessorException, IOException {
+    private void printOutData(CyfaceDataProcessorOnDiskImpl proc)
+            throws CyfaceCompressedDataProcessorException, IOException {
         LocationPoint locItem;
         while ((locItem = proc.pollNextLocationPoint()) != null) {
             System.out.println(locItem.toString());
