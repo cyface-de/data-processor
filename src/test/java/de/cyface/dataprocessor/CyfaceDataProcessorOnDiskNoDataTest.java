@@ -8,6 +8,11 @@ import org.junit.Test;
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor.CyfaceCompressedDataProcessorException;
 import de.cyface.dataprocessor.impl.CyfaceDataProcessorOnDiskImpl;
 
+/**
+ * 
+ * @author Philipp Grubitzsch
+ *
+ */
 public class CyfaceDataProcessorOnDiskNoDataTest {
 
     CyfaceDataProcessorOnDiskImpl oocut;

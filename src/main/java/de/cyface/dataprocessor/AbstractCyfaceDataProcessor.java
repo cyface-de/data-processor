@@ -20,7 +20,19 @@ import de.cyface.data.LocationPoint;
 import de.cyface.data.Point3D;
 import de.cyface.data.Point3D.TypePoint3D;
 
-public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcessor {
+/**
+ * The CyfaceDataProcessor can be used to easily convert sensor data from the Cyface binary
+ * format, either plain (.cyf) or compressed (.ccyf), in an arbitrary format. It uses InputStreams and OutputStreams for
+ * conversion. Thus, an a specific implementation can used diefferent approaches for buffering data, e.g. in file system
+ * or in memory. Several functions allow to poll single sensor values from those files as {@link LocationPoint} or
+ * {@link Point3D} or objects, which contain the human readable data for further processing.
+ * 
+ * @since 0.2.0
+ * 
+ * @author Philipp Grubitzsch
+ *
+ */
+public abstract class AbstractCyfaceDataProcessor implements CyfaceDataProcessor {
 
     static final String uncompress_FIRST_EXCEPTION = "Binary has to be uncompressed before other operations can be used.";
     static final String PREPARE_FIRST_EXCEPTION = "Binary has to be prepared before this operations can be used.";
@@ -36,10 +48,12 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
     protected InputStream compressedBinaryInputStream;
 
     private InflaterInputStream inflaterInputStream;
+    private InputStream binaryInputStream;
 
     public AbstractCyfaceDataProcessor(InputStream binaryInputStream, boolean compressed) {
         Objects.requireNonNull(binaryInputStream, "InputStream must not be null.");
         uncompressed = !compressed;
+        this.binaryInputStream = binaryInputStream;
     }
 
     @Override
@@ -62,18 +76,34 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
     }
 
     @Override
-    public ICyfaceDataProcessor uncompressAndPrepare() throws IOException, CyfaceCompressedDataProcessorException {
+    public CyfaceDataProcessor uncompressAndPrepare() throws IOException, CyfaceCompressedDataProcessorException {
         uncompress();
         prepare();
         return this;
     }
 
+    /**
+     * 
+     * @return an implementation of an OutputStream that can be used to buffer binary location data output
+     */
     protected abstract OutputStream getTempLocOutputStream();
 
+    /**
+     * 
+     * @return an implementation of an OutputStream that can be used to buffer binary accelerometer data output
+     */
     protected abstract OutputStream getTempAccOutputStream();
 
+    /**
+     * 
+     * @return an implementation of an OutputStream that can be used to buffer binary rotation data output
+     */
     protected abstract OutputStream getTempRotOutputStream();
 
+    /**
+     * 
+     * @return an implementation of an OutputStream that can be used to buffer binary direction data output
+     */
     protected abstract OutputStream getTempDirOutputStream();
 
     /**
@@ -132,7 +162,7 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
     protected abstract InputStream getUncompressedInputStream();
 
     @Override
-    public ICyfaceDataProcessor uncompress() throws CyfaceCompressedDataProcessorException, IOException {
+    public CyfaceDataProcessor uncompress() throws CyfaceCompressedDataProcessorException, IOException {
         InputStream reader = null;
         if (!uncompressed) {
             boolean nowrap = false;
@@ -192,6 +222,10 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
 
     BufferedInputStream tempLocStream;
 
+    /**
+     * 
+     * @return an implementation of an InputStream to read buffered binary location data from
+     */
     protected abstract InputStream getSpecificLocInputStream();
 
     @Override
@@ -214,6 +248,10 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
 
     BufferedInputStream tempAccStream;
 
+    /**
+     * 
+     * @return an implementation of an InputStream to read buffered binary accelerometer data from
+     */
     protected abstract InputStream getSpecificAccInputStream();
 
     @Override
@@ -237,6 +275,10 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
 
     BufferedInputStream tempRotStream;
 
+    /**
+     * 
+     * @return an implementation of an InputStream to read buffered binary rotation data from
+     */
     protected abstract InputStream getSpecificRotInputStream();
 
     @Override
@@ -261,6 +303,10 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
 
     BufferedInputStream tempDirStream;
 
+    /**
+     * 
+     * @return an implementation of an InputStream to read buffered binary rotation data from
+     */
     protected abstract InputStream getSpecificDirInputStream();
 
     @Override
@@ -432,6 +478,7 @@ public abstract class AbstractCyfaceDataProcessor implements ICyfaceDataProcesso
     @Override
     public void close() throws IOException {
         try {
+            closeStreamIfNotNull(binaryInputStream);
             closeStreamIfNotNull(inflaterInputStream);
             closeStreamIfNotNull(compressedBinaryInputStream);
             closeStreamIfNotNull(uncompressedBinaryInputStream);

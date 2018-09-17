@@ -13,18 +13,14 @@ import java.util.UUID;
 
 import org.apache.commons.io.IOUtils;
 
-import de.cyface.data.LocationPoint;
-import de.cyface.data.Point3D;
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor;
 
 /**
- * The CyfaceDataProcessor can be used to easily get Strings of human readable sensor data from the Cyface binary
- * format, either plain (.cyf) or compressed (.ccyf). It is optimized to use as less memory as possible. Therefore the
- * local file system is utilized to create binary temp files for each sensor. Several functions allow to poll single
- * sensor values from those files as {@link LocationPoint} or {@link Point3D} or objects, which contain the human
- * readable data for further processing.
+ * This implementation of the CyfaceDataProcessor is optimized to use as less memory as possible. Therefore the
+ * local file system is utilized to create binary temp files for each sensor.
  * 
  * @author Philipp Grubitzsch
+ * @since 0.2.0
  *
  */
 public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {

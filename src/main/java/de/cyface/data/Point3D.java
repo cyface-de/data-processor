@@ -1,5 +1,11 @@
 package de.cyface.data;
 
+/**
+ * 
+ * @author Philipp Grubitzsch
+ * @since 0.1.0
+ *
+ */
 public class Point3D {
 
     public static enum TypePoint3D {

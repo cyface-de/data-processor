@@ -19,6 +19,11 @@ import de.cyface.data.Point3D;
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor.CyfaceCompressedDataProcessorException;
 import de.cyface.dataprocessor.impl.CyfaceDataProcessorOnDiskImpl;
 
+/**
+ * 
+ * @author Philipp Grubitzsch
+ *
+ */
 public class CyfaceDataProcessorOnDiskTest {
 
     FileInputStream fileInputStream;
@@ -144,7 +149,8 @@ public class CyfaceDataProcessorOnDiskTest {
     }
 
     @SuppressWarnings("unused")
-    private void printOutData(CyfaceDataProcessorOnDiskImpl proc) throws CyfaceCompressedDataProcessorException, IOException {
+    private void printOutData(CyfaceDataProcessorOnDiskImpl proc)
+            throws CyfaceCompressedDataProcessorException, IOException {
         LocationPoint locItem;
         while ((locItem = proc.pollNextLocationPoint()) != null) {
             System.out.println(locItem.toString());

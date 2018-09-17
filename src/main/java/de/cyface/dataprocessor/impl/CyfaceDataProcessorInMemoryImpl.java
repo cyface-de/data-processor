@@ -10,6 +10,14 @@ import org.apache.commons.io.IOUtils;
 
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor;
 
+/**
+ * This implementation of the CyfaceDataProcessor is optimized for maximum performance. Therefore memory (RAM) is
+ * utilized to create binary temp arrays for each sensor.
+ * 
+ * @author Philipp Grubitzsch
+ * @since 0.2.0
+ *
+ */
 public class CyfaceDataProcessorInMemoryImpl extends AbstractCyfaceDataProcessor {
 
     // separate temporary byte array parts for each sensor type

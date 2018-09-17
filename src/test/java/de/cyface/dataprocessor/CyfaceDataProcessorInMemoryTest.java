@@ -20,6 +20,11 @@ import de.cyface.dataprocessor.AbstractCyfaceDataProcessor.CyfaceCompressedDataP
 import de.cyface.dataprocessor.impl.CyfaceDataProcessorInMemoryImpl;
 import de.cyface.dataprocessor.impl.CyfaceDataProcessorOnDiskImpl;
 
+/**
+ * 
+ * @author Philipp Grubitzsch
+ *
+ */
 public class CyfaceDataProcessorInMemoryTest {
 
     FileInputStream fileInputStream;
@@ -133,7 +138,7 @@ public class CyfaceDataProcessorInMemoryTest {
                 "timestamp=1531214224003,lon=13.72905942612675,lat=51.05205897246585,speed=0.0,accuracy=1000")));
     }
 
-    private void printOutHeaderInfoFromRawBinary(ICyfaceDataProcessor proc)
+    private void printOutHeaderInfoFromRawBinary(CyfaceDataProcessor proc)
             throws CyfaceCompressedDataProcessorException, IOException {
         byte[] individualBytes = proc.getUncompressedBinaryAsArray();
         System.out.println("uncompressed size: " + individualBytes.length);

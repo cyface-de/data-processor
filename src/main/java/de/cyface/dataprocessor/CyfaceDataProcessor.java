@@ -7,7 +7,13 @@ import de.cyface.data.LocationPoint;
 import de.cyface.data.Point3D;
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor.CyfaceCompressedDataProcessorException;
 
-public interface ICyfaceDataProcessor extends Closeable {
+/**
+ * 
+ * @author Philipp Grubitzsch
+ * @since 0.2.0
+ *
+ */
+public interface CyfaceDataProcessor extends Closeable {
 
     /**
      * 
@@ -37,7 +43,7 @@ public interface ICyfaceDataProcessor extends Closeable {
      * @throws IOException
      * @throws CyfaceCompressedDataProcessorException
      */
-    public ICyfaceDataProcessor uncompressAndPrepare() throws IOException, CyfaceCompressedDataProcessorException;
+    public CyfaceDataProcessor uncompressAndPrepare() throws IOException, CyfaceCompressedDataProcessorException;
 
     /**
      * This method uncompress binary data.
@@ -46,7 +52,7 @@ public interface ICyfaceDataProcessor extends Closeable {
      * @throws CyfaceCompressedDataProcessorException
      * @throws IOException
      */
-    public ICyfaceDataProcessor uncompress() throws CyfaceCompressedDataProcessorException, IOException;
+    public CyfaceDataProcessor uncompress() throws CyfaceCompressedDataProcessorException, IOException;
 
     /**
      * Polls the next available geo location from binary temp file
