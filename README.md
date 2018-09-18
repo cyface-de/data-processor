@@ -4,9 +4,11 @@ This is the library for serializing/deserializing as well as compressing/decompr
 ## Usage
 -------------------
 
-1. Create a CyfaceDataProcessor object for each cyface binary you want to process as `InputStream` and tell the processor, if the source binary is `compressed`.
-`CyfaceDataProcessor proc = new CyfaceDataProcessor(binInputStream, compressed);`
+1. Create a CyfaceDataProcessor object for each cyface binary you want to process as `InputStream` and tell the processor, if the source binary is `compressed`. Two implemenations for either in-memory or filesystem processing are available for usage:
 
+    * `CyfaceDataProcessor proc = new CyfaceDataProcessorOnDiskImpl(binInputStream, compressed);`
+    * `CyfaceDataProcessor proc = new CyfaceDataProcessorInMemoryImpl(binInputStream, compressed);`
+    
 2. Let the CyfaceDataProcessor uncompress and prepare the binary source for later data readout
 `proc.uncompressAndPrepare();`
 
@@ -22,6 +24,3 @@ This is the library for serializing/deserializing as well as compressing/decompr
    
 4. After complete read out, **don't forget** to close the processor to release resources!
 `proc.close();`
-
-## Upcomping Feature
-To avoid buffer overflows, the actual version of the CyfaceDataProcessor always use the file system to temporarily store the full uncompressed binary and the splitted raw sensor binaries. Later versions will get an option via constructor flag to do in memory processing.
