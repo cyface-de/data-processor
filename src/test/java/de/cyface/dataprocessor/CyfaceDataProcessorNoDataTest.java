@@ -6,6 +6,7 @@ import java.io.IOException;
 import org.junit.Test;
 
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor.CyfaceCompressedDataProcessorException;
+import de.cyface.dataprocessor.impl.CyfaceDataProcessorInMemoryImpl;
 import de.cyface.dataprocessor.impl.CyfaceDataProcessorOnDiskImpl;
 
 /**
@@ -13,9 +14,9 @@ import de.cyface.dataprocessor.impl.CyfaceDataProcessorOnDiskImpl;
  * @author Philipp Grubitzsch
  *
  */
-public class CyfaceDataProcessorOnDiskNoDataTest {
+public class CyfaceDataProcessorNoDataTest {
 
-    CyfaceDataProcessorOnDiskImpl oocut;
+    CyfaceDataProcessor oocut;
     FileInputStream fileInputStream;
 
     @Test(expected = NullPointerException.class)
@@ -26,15 +27,24 @@ public class CyfaceDataProcessorOnDiskNoDataTest {
     }
 
     @Test
-    public void testNoSensorData() throws IOException, CyfaceCompressedDataProcessorException {
+    public void testNoSensorDataOnDisk() throws IOException, CyfaceCompressedDataProcessorException {
         fileInputStream = new FileInputStream(this.getClass().getResource("/nosensordata.ccyf").getFile());
         oocut = new CyfaceDataProcessorOnDiskImpl(fileInputStream, true);
-        oocut.uncompress();
+        oocut.uncompressAndPrepare();
         printOutHeaderInfo(oocut);
         oocut.close();
     }
 
-    private void printOutHeaderInfo(CyfaceDataProcessorOnDiskImpl proc)
+    @Test
+    public void testNoSensorDataInMemory() throws IOException, CyfaceCompressedDataProcessorException {
+        fileInputStream = new FileInputStream(this.getClass().getResource("/nosensordata.ccyf").getFile());
+        oocut = new CyfaceDataProcessorInMemoryImpl(fileInputStream, true);
+        oocut.uncompressAndPrepare();
+        printOutHeaderInfo(oocut);
+        oocut.close();
+    }
+
+    private void printOutHeaderInfo(CyfaceDataProcessor proc)
             throws CyfaceCompressedDataProcessorException, IOException {
         byte[] individualBytes = proc.getUncompressedBinaryAsArray();
         System.out.println("uncompressed size: " + individualBytes.length);

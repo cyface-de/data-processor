@@ -119,12 +119,13 @@ public abstract class AbstractCyfaceDataProcessor implements CyfaceDataProcessor
         // getHeader();
 
         // write out geo locations
-
-        OutputStream binLocationTemp = getTempLocOutputStream();
-        int locationBytesCount = this.getHeader().getNumberOfGeoLocations() * ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY;
-        copyStream(uncompressedBinaryInputStream, binLocationTemp, 0, locationBytesCount);
-        binLocationTemp.close();
-
+        if (this.getHeader().getNumberOfGeoLocations() > 0) {
+            OutputStream binLocationTemp = getTempLocOutputStream();
+            int locationBytesCount = this.getHeader().getNumberOfGeoLocations()
+                    * ByteSizes.BYTES_IN_ONE_GEO_LOCATION_ENTRY;
+            copyStream(uncompressedBinaryInputStream, binLocationTemp, 0, locationBytesCount);
+            binLocationTemp.close();
+        }
         // write out accelerometer data
         if (this.getHeader().getNumberOfAccelerations() > 0) {
 
