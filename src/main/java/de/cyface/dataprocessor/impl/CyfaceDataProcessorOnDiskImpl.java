@@ -1,6 +1,7 @@
 package de.cyface.dataprocessor.impl;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -121,48 +122,64 @@ public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {
     @Override
     protected InputStream getSpecificAccInputStream() {
         // TODO Auto-generated method stub
-        try {
-            return new FileInputStream(tempAccFile);
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return null;
+        if (tempAccFile != null) {
+            try {
+                return new FileInputStream(tempAccFile);
+            } catch (FileNotFoundException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                return null;
+            }
+        } else {
+            return new ByteArrayInputStream(new byte[0]);
         }
     }
 
     @Override
     protected InputStream getSpecificLocInputStream() {
         // TODO Auto-generated method stub
-        try {
-            return new FileInputStream(tempLocFile);
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return null;
+        if (tempLocFile != null) {
+            try {
+                return new FileInputStream(tempLocFile);
+            } catch (FileNotFoundException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                return null;
+            }
+        } else {
+            return new ByteArrayInputStream(new byte[0]);
         }
     }
 
     @Override
     protected InputStream getSpecificRotInputStream() {
         // TODO Auto-generated method stub
-        try {
-            return new FileInputStream(tempRotFile);
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return null;
+        if (tempRotFile != null) {
+            try {
+                return new FileInputStream(tempRotFile);
+            } catch (FileNotFoundException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                return null;
+            }
+        } else {
+            return new ByteArrayInputStream(new byte[0]);
         }
     }
 
     @Override
     protected InputStream getSpecificDirInputStream() {
         // TODO Auto-generated method stub
-        try {
-            return new FileInputStream(tempDirFile);
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return null;
+        if (tempDirFile != null) {
+            try {
+                return new FileInputStream(tempDirFile);
+            } catch (FileNotFoundException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                return null;
+            }
+        } else {
+            return new ByteArrayInputStream(new byte[0]);
         }
     }
 

@@ -65,23 +65,38 @@ public class CyfaceDataProcessorInMemoryImpl extends AbstractCyfaceDataProcessor
 
     @Override
     protected InputStream getSpecificLocInputStream() {
-        return new ByteArrayInputStream(tempLocBin.toByteArray());
+        if (tempLocBin != null) {
+            return new ByteArrayInputStream(tempLocBin.toByteArray());
+        } else {
+            return new ByteArrayInputStream(new byte[0]);
+        }
     }
 
     @Override
     protected InputStream getSpecificAccInputStream() {
-        // TODO Auto-generated method stub
-        return new ByteArrayInputStream(tempAccBin.toByteArray());
+        if (tempAccBin != null) {
+            return new ByteArrayInputStream(tempAccBin.toByteArray());
+        } else {
+            return new ByteArrayInputStream(new byte[0]);
+        }
     }
 
     @Override
     protected InputStream getSpecificRotInputStream() {
-        return new ByteArrayInputStream(tempRotBin.toByteArray());
+        if (tempRotBin != null) {
+            return new ByteArrayInputStream(tempRotBin.toByteArray());
+        } else {
+            return new ByteArrayInputStream(new byte[0]);
+        }
     }
 
     @Override
     protected InputStream getSpecificDirInputStream() {
-        return new ByteArrayInputStream(tempDirBin.toByteArray());
+        if (tempDirBin != null) {
+            return new ByteArrayInputStream(tempDirBin.toByteArray());
+        } else {
+            return new ByteArrayInputStream(new byte[0]);
+        }
     }
 
     @Override

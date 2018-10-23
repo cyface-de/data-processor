@@ -1,5 +1,7 @@
 package de.cyface.dataprocessor;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 
@@ -31,6 +33,10 @@ public class CyfaceDataProcessorNoDataTest {
         fileInputStream = new FileInputStream(this.getClass().getResource("/nosensordata.ccyf").getFile());
         oocut = new CyfaceDataProcessorOnDiskImpl(fileInputStream, true);
         oocut.uncompressAndPrepare();
+        assertEquals(oocut.pollNextLocationPoint(), null);
+        assertEquals(oocut.pollNextDirectionPoint(), null);
+        assertEquals(oocut.pollNextRotationPoint(), null);
+        assertEquals(oocut.pollNextAccelerationPoint(), null);
         printOutHeaderInfo(oocut);
         oocut.close();
     }
@@ -40,6 +46,10 @@ public class CyfaceDataProcessorNoDataTest {
         fileInputStream = new FileInputStream(this.getClass().getResource("/nosensordata.ccyf").getFile());
         oocut = new CyfaceDataProcessorInMemoryImpl(fileInputStream, true);
         oocut.uncompressAndPrepare();
+        assertEquals(oocut.pollNextLocationPoint(), null);
+        assertEquals(oocut.pollNextDirectionPoint(), null);
+        assertEquals(oocut.pollNextRotationPoint(), null);
+        assertEquals(oocut.pollNextAccelerationPoint(), null);
         printOutHeaderInfo(oocut);
         oocut.close();
     }
