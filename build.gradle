@@ -8,6 +8,15 @@
 group = 'de.cyface'
 version = "0.2.2"
 
+/* 
+ * Read movebis publication settings from central properties. 
+ * If these values are not set it is not possible to publish the created artifacts to the 
+ * Movebis artifact repository.
+ */
+def publishToUrl = project.ext.properties.mavenMovebisUrl
+def publishToUsername = project.ext.properties.mavenMovebisUser
+def publishToPassword = project.ext.properties.mavenMovebisPassword
+
 // Apply the java-library plugin to add support for Java Library
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
@@ -17,8 +26,10 @@ repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
     mavenCentral()
-    maven {
-        url mavenMovebisUrl
+    if(publishToUrl!=null) {
+    	maven {
+        	url publishToUrl
+    	}
     }
 }
 
@@ -55,15 +66,19 @@ publishing {
     }
 }
 
-publishing {
-    repositories {
-        maven {
-            // set in <user.home>/.gradle/gradle.properties
-            url mavenMovebisUrl
-            credentials {
-                username mavenMovebisUser
-                password mavenMovebisPassword
-            }
-        }
-    }
+if(publishToUrl != null) {
+	publishing {
+	    repositories {
+	        maven {
+	            // set in <user.home>/.gradle/gradle.properties
+	            url publishToUrl
+	            if(publishToUsername != null && publishToPassword != null) {
+		            credentials {
+		                username publishToUsername
+		                password publishToPassword
+		            }
+	            }
+	        }
+	    }
+	}
 }
