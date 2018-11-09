@@ -83,4 +83,14 @@ public class CyfaceBinaryHeader {
     }
 
     int beginOfDirectionsIndex;
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Cyface Format Version: ").append(getFormatVersion()).append("\n").append("# geo: ")
+                .append(getNumberOfGeoLocations()).append("\n").append("# acc: ").append(getNumberOfAccelerations())
+                .append("\n").append("# rot: ").append(getNumberOfRotations()).append("\n").append("# dir: ")
+                .append(getNumberOfDirections());
+        return sb.toString();
+    }
 }
