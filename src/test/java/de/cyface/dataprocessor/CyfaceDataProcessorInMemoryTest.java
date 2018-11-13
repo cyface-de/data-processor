@@ -18,7 +18,6 @@ import de.cyface.data.LocationPoint;
 import de.cyface.data.Point3D;
 import de.cyface.dataprocessor.AbstractCyfaceDataProcessor.CyfaceCompressedDataProcessorException;
 import de.cyface.dataprocessor.impl.CyfaceDataProcessorInMemoryImpl;
-import de.cyface.dataprocessor.impl.CyfaceDataProcessorOnDiskImpl;
 
 /**
  * 
@@ -119,7 +118,6 @@ public class CyfaceDataProcessorInMemoryTest {
      * @throws CyfaceCompressedDataProcessorException
      * @throws IOException
      */
-    // @Ignore
     @Test
     public void testUncompressAndPrepareIOSData() throws CyfaceCompressedDataProcessorException, IOException {
         fileInputStream = new FileInputStream(this.getClass().getResource("/iphone-working.ccyf").getFile());
@@ -150,8 +148,7 @@ public class CyfaceDataProcessorInMemoryTest {
     }
 
     @SuppressWarnings("unused")
-    private void printOutData(CyfaceDataProcessorOnDiskImpl proc)
-            throws CyfaceCompressedDataProcessorException, IOException {
+    private void printOutData(CyfaceDataProcessor proc) throws CyfaceCompressedDataProcessorException, IOException {
         LocationPoint locItem;
         while ((locItem = proc.pollNextLocationPoint()) != null) {
             System.out.println(locItem.toString());

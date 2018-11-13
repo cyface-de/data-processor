@@ -149,8 +149,7 @@ public class CyfaceDataProcessorOnDiskTest {
     }
 
     @SuppressWarnings("unused")
-    private void printOutData(CyfaceDataProcessorOnDiskImpl proc)
-            throws CyfaceCompressedDataProcessorException, IOException {
+    private void printOutData(CyfaceDataProcessor proc) throws CyfaceCompressedDataProcessorException, IOException {
         LocationPoint locItem;
         while ((locItem = proc.pollNextLocationPoint()) != null) {
             System.out.println(locItem.toString());
