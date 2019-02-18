@@ -430,7 +430,7 @@ public abstract class AbstractCyfaceDataProcessor implements CyfaceDataProcessor
         }
     }
 
-    protected static final class CyfaceCompressedDataProcessorException extends Exception {
+    public static final class CyfaceCompressedDataProcessorException extends Exception {
 
         public CyfaceCompressedDataProcessorException(final String message) {
             super(message);
