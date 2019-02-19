@@ -150,24 +150,35 @@ public class CyfaceDataProcessorInMemoryTest {
     @SuppressWarnings("unused")
     private void printOutData(CyfaceDataProcessor proc) throws CyfaceCompressedDataProcessorException, IOException {
         LocationPoint locItem;
+
+        long start = System.nanoTime();
+        int count = 0;
         while ((locItem = proc.pollNextLocationPoint()) != null) {
-            System.out.println(locItem.toString());
+            count++;
+            // System.out.println(locItem.toString());
         }
 
         Point3D accItem;
         while ((accItem = proc.pollNextAccelerationPoint()) != null) {
-            System.out.println(accItem.toString());
+            count++;
+            // System.out.println(accItem.toString());
         }
 
         Point3D rotItem;
         while ((rotItem = proc.pollNextRotationPoint()) != null) {
-            System.out.println(rotItem.toString());
+            count++;
+            // System.out.println(rotItem.toString());
         }
 
         Point3D dirItem;
         while ((dirItem = proc.pollNextDirectionPoint()) != null) {
-            System.out.println(dirItem.toString());
+            count++;
+            // System.out.println(dirItem.toString());
         }
+
+        long processNanoTime = (System.nanoTime() - start);
+        System.out.println(
+                processNanoTime / 1000000 + " ms - " + processNanoTime / count + " ns/item - " + count + " items");
     }
 
     @After

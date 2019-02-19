@@ -119,67 +119,92 @@ public class CyfaceDataProcessorOnDiskImpl extends AbstractCyfaceDataProcessor {
         }
     }
 
+    FileInputStream accFileInputStream;
+
     @Override
     protected InputStream getSpecificAccInputStream() {
         // TODO Auto-generated method stub
-        if (tempAccFile != null) {
-            try {
-                return new FileInputStream(tempAccFile);
-            } catch (FileNotFoundException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                return null;
-            }
+        if (accFileInputStream != null) {
+            return accFileInputStream;
         } else {
-            return new ByteArrayInputStream(new byte[0]);
+            if (tempAccFile != null) {
+                try {
+                    accFileInputStream = new FileInputStream(tempAccFile);
+                    return accFileInputStream;
+                } catch (FileNotFoundException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    return null;
+                }
+            } else {
+                return new ByteArrayInputStream(new byte[0]);
+            }
         }
     }
+
+    FileInputStream locFileInputStream;
 
     @Override
     protected InputStream getSpecificLocInputStream() {
-        // TODO Auto-generated method stub
-        if (tempLocFile != null) {
-            try {
-                return new FileInputStream(tempLocFile);
-            } catch (FileNotFoundException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                return null;
-            }
+        if (locFileInputStream != null) {
+            return locFileInputStream;
         } else {
-            return new ByteArrayInputStream(new byte[0]);
+            if (tempLocFile != null) {
+                try {
+                    locFileInputStream = new FileInputStream(tempLocFile);
+                    return locFileInputStream;
+                } catch (FileNotFoundException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    return null;
+                }
+            } else {
+                return new ByteArrayInputStream(new byte[0]);
+            }
         }
     }
+
+    FileInputStream rotFileInputStream;
 
     @Override
     protected InputStream getSpecificRotInputStream() {
-        // TODO Auto-generated method stub
-        if (tempRotFile != null) {
-            try {
-                return new FileInputStream(tempRotFile);
-            } catch (FileNotFoundException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                return null;
-            }
+        if (rotFileInputStream != null) {
+            return rotFileInputStream;
         } else {
-            return new ByteArrayInputStream(new byte[0]);
+            if (tempRotFile != null) {
+                try {
+                    rotFileInputStream = new FileInputStream(tempRotFile);
+                    return rotFileInputStream;
+                } catch (FileNotFoundException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    return null;
+                }
+            } else {
+                return new ByteArrayInputStream(new byte[0]);
+            }
         }
     }
 
+    FileInputStream dirFileInputStream;
+
     @Override
     protected InputStream getSpecificDirInputStream() {
-        // TODO Auto-generated method stub
-        if (tempDirFile != null) {
-            try {
-                return new FileInputStream(tempDirFile);
-            } catch (FileNotFoundException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                return null;
-            }
+        if (dirFileInputStream != null) {
+            return dirFileInputStream;
         } else {
-            return new ByteArrayInputStream(new byte[0]);
+            if (tempDirFile != null) {
+                try {
+                    dirFileInputStream = new FileInputStream(tempDirFile);
+                    return dirFileInputStream;
+                } catch (FileNotFoundException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    return null;
+                }
+            } else {
+                return new ByteArrayInputStream(new byte[0]);
+            }
         }
     }
 

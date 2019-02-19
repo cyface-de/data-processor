@@ -63,39 +63,67 @@ public class CyfaceDataProcessorInMemoryImpl extends AbstractCyfaceDataProcessor
         return new ByteArrayInputStream(uncompressedTempBin.toByteArray());
     }
 
+    ByteArrayInputStream locByteArrayStream;
+
     @Override
     protected InputStream getSpecificLocInputStream() {
-        if (tempLocBin != null) {
-            return new ByteArrayInputStream(tempLocBin.toByteArray());
+        if (locByteArrayStream != null) {
+            return locByteArrayStream;
         } else {
-            return new ByteArrayInputStream(new byte[0]);
+            if (tempLocBin != null) {
+                locByteArrayStream = new ByteArrayInputStream(tempLocBin.toByteArray());
+                return locByteArrayStream;
+            } else {
+                return new ByteArrayInputStream(new byte[0]);
+            }
         }
     }
+
+    ByteArrayInputStream accByteArrayStream;
 
     @Override
     protected InputStream getSpecificAccInputStream() {
-        if (tempAccBin != null) {
-            return new ByteArrayInputStream(tempAccBin.toByteArray());
+        if (accByteArrayStream != null) {
+            return accByteArrayStream;
         } else {
-            return new ByteArrayInputStream(new byte[0]);
+            if (tempAccBin != null) {
+                accByteArrayStream = new ByteArrayInputStream(tempAccBin.toByteArray());
+                return accByteArrayStream;
+            } else {
+                return new ByteArrayInputStream(new byte[0]);
+            }
         }
     }
+
+    ByteArrayInputStream rotByteArrayStream;
 
     @Override
     protected InputStream getSpecificRotInputStream() {
-        if (tempRotBin != null) {
-            return new ByteArrayInputStream(tempRotBin.toByteArray());
+        if (rotByteArrayStream != null) {
+            return rotByteArrayStream;
         } else {
-            return new ByteArrayInputStream(new byte[0]);
+            if (tempRotBin != null) {
+                rotByteArrayStream = new ByteArrayInputStream(tempRotBin.toByteArray());
+                return rotByteArrayStream;
+            } else {
+                return new ByteArrayInputStream(new byte[0]);
+            }
         }
     }
 
+    ByteArrayInputStream dirByteArrayStream;
+
     @Override
     protected InputStream getSpecificDirInputStream() {
-        if (tempDirBin != null) {
-            return new ByteArrayInputStream(tempDirBin.toByteArray());
+        if (dirByteArrayStream != null) {
+            return dirByteArrayStream;
         } else {
-            return new ByteArrayInputStream(new byte[0]);
+            if (tempDirBin != null) {
+                dirByteArrayStream = new ByteArrayInputStream(tempDirBin.toByteArray());
+                return dirByteArrayStream;
+            } else {
+                return new ByteArrayInputStream(new byte[0]);
+            }
         }
     }
 
