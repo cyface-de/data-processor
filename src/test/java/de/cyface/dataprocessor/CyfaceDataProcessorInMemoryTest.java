@@ -49,7 +49,7 @@ public class CyfaceDataProcessorInMemoryTest {
         printOutHeaderInfoFromRawBinary(proc);
 
         byte[] individualBytes = proc.getUncompressedBinaryAsArray();
-        assertEquals(individualBytes.length, 116398);
+        assertEquals(116398, individualBytes.length);
 
         ByteBuffer buffer = ByteBuffer.wrap(individualBytes);
         short formatVersion = buffer.order(ByteOrder.BIG_ENDIAN).getShort(0);
@@ -63,7 +63,7 @@ public class CyfaceDataProcessorInMemoryTest {
         int numberOfDirections = buffer.order(ByteOrder.BIG_ENDIAN).getInt(14);
         assertThat(numberOfDirections, is(equalTo(2)));
 
-        // printOutData(proc);
+        //
         assertThat(proc.pollNextLocationPoint().toString(), is(equalTo(
                 "timestamp=1521631263237,lon=13.728253648287687,lat=51.03168352640331,speed=0.18293093144893646,accuracy=1200")));
         assertThat(proc.pollNextAccelerationPoint().toString(), is(equalTo(
@@ -72,6 +72,70 @@ public class CyfaceDataProcessorInMemoryTest {
                 "timestamp=1521631263777,x=0.24593007564544678,y=-0.20202352106571198,z=0.5091384649276733,sensortype=ROT")));
         assertEquals(proc.pollNextDirectionPoint().toString(),
                 "timestamp=1521632513534,x=-41.099998474121094,y=10.319999694824219,z=-7.619999885559082,sensortype=DIR");
+        printOutData(proc);
+    }
+
+    @Test
+    public void testUncompressCyfaceBinaryAndroid2018() throws CyfaceCompressedDataProcessorException, IOException {
+        fileInputStream = new FileInputStream(this.getClass().getResource("/android-format2018.ccyf").getFile());
+
+        try {
+            proc = new CyfaceDataProcessorInMemoryImpl(fileInputStream, true);
+            proc.uncompressAndPrepare();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        printOutHeaderInfoFromRawBinary(proc);
+
+        byte[] individualBytes = proc.getUncompressedBinaryAsArray();
+        assertEquals(35478, individualBytes.length);
+
+        printOutData(proc);
+    }
+
+    @Test
+    public void testUncompressCyfaceBinaryAndroid2019pseudoCorrupt()
+            throws CyfaceCompressedDataProcessorException, IOException {
+        fileInputStream = new FileInputStream(
+                this.getClass().getResource("/android-format2019-nowrap-only.ccyf").getFile());
+
+        try {
+            proc = new CyfaceDataProcessorInMemoryImpl(fileInputStream, true);
+            proc.uncompressAndPrepare();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        printOutHeaderInfoFromRawBinary(proc);
+
+        byte[] individualBytes = proc.getUncompressedBinaryAsArray();
+        assertEquals(22216054, individualBytes.length);
+
+        printOutData(proc);
+    }
+
+    @Test
+    public void testUncompressCyfaceBinaryAndroid2019() throws CyfaceCompressedDataProcessorException, IOException {
+        fileInputStream = new FileInputStream(
+                this.getClass().getResource("/android-format2019-nowrap-arbitrary.ccyf").getFile());
+
+        try {
+            proc = new CyfaceDataProcessorInMemoryImpl(fileInputStream, true);
+            proc.uncompressAndPrepare();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        printOutHeaderInfoFromRawBinary(proc);
+
+        byte[] individualBytes = proc.getUncompressedBinaryAsArray();
+        assertEquals(5638142, individualBytes.length);
+
+        printOutData(proc);
     }
 
     @Test

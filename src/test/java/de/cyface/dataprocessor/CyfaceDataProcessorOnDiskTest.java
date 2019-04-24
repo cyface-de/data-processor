@@ -75,6 +75,69 @@ public class CyfaceDataProcessorOnDiskTest {
     }
 
     @Test
+    public void testUncompressCyfaceBinaryAndroid2018() throws CyfaceCompressedDataProcessorException, IOException {
+        fileInputStream = new FileInputStream(this.getClass().getResource("/android-format2018.ccyf").getFile());
+
+        try {
+            proc = new CyfaceDataProcessorOnDiskImpl(fileInputStream, true);
+            proc.uncompressAndPrepare();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        printOutHeaderInfoFromRawBinary(proc);
+
+        byte[] individualBytes = proc.getUncompressedBinaryAsArray();
+        assertEquals(35478, individualBytes.length);
+
+        printOutData(proc);
+    }
+
+    @Test
+    public void testUncompressCyfaceBinaryAndroid2019pseudoCorrupt()
+            throws CyfaceCompressedDataProcessorException, IOException {
+        fileInputStream = new FileInputStream(
+                this.getClass().getResource("/android-format2019-nowrap-only.ccyf").getFile());
+
+        try {
+            proc = new CyfaceDataProcessorOnDiskImpl(fileInputStream, true);
+            proc.uncompressAndPrepare();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        printOutHeaderInfoFromRawBinary(proc);
+
+        byte[] individualBytes = proc.getUncompressedBinaryAsArray();
+        assertEquals(22216054, individualBytes.length);
+
+        printOutData(proc);
+    }
+
+    @Test
+    public void testUncompressCyfaceBinaryAndroid2019() throws CyfaceCompressedDataProcessorException, IOException {
+        fileInputStream = new FileInputStream(
+                this.getClass().getResource("/android-format2019-nowrap-arbitrary.ccyf").getFile());
+
+        try {
+            proc = new CyfaceDataProcessorOnDiskImpl(fileInputStream, true);
+            proc.uncompressAndPrepare();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        printOutHeaderInfoFromRawBinary(proc);
+
+        byte[] individualBytes = proc.getUncompressedBinaryAsArray();
+        assertEquals(5638142, individualBytes.length);
+
+        printOutData(proc);
+    }
+
+    @Test
     public void testDeserializeUncompressedCyfaceData() throws CyfaceCompressedDataProcessorException, IOException {
         fileInputStream = new FileInputStream(this.getClass().getResource("/uncompressed.cyf").getFile());
         try {

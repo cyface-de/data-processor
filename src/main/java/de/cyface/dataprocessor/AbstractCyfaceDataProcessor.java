@@ -166,7 +166,7 @@ public abstract class AbstractCyfaceDataProcessor implements CyfaceDataProcessor
     public CyfaceDataProcessor uncompress() throws CyfaceCompressedDataProcessorException, IOException {
         InputStream reader = null;
         if (!uncompressed) {
-            boolean nowrap = false;
+            boolean nowrap = true;
             boolean retry = true;
 
             while (retry && !uncompressed) {
@@ -177,9 +177,9 @@ public abstract class AbstractCyfaceDataProcessor implements CyfaceDataProcessor
                     uncompressed = true;
                     retry = false;
                 } catch (ZipException e1) {
-                    // binary input could be created with iOS, retry with nowrap option
-                    if (e1.getMessage().equals("incorrect header check")) {
-                        nowrap = true;
+                    // binary input created with cyface SDK before Version 3.3.0, used nowrap=false option
+                    if (e1.getMessage().equals("invalid stored block lengths")) {
+                        nowrap = false;
                     } else {
                         retry = false;
                         throw new CyfaceCompressedDataProcessorException(
