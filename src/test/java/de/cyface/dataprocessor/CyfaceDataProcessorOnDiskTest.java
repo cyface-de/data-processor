@@ -200,6 +200,31 @@ public class CyfaceDataProcessorOnDiskTest {
                 "timestamp=1531214224003,lon=13.72905942612675,lat=51.05205897246585,speed=0.0,accuracy=1000")));
     }
 
+    /**
+     * Early 2019 version of iOS component submitted uncompressed data
+     * 
+     * @throws CyfaceCompressedDataProcessorException
+     * @throws IOException
+     */
+    @Test
+    public void testUncompressedAndPrepareIOSData() throws CyfaceCompressedDataProcessorException, IOException {
+        fileInputStream = new FileInputStream(this.getClass().getResource("/ios-uncompressed-20190424.ccyf").getFile());
+        try {
+            proc = new CyfaceDataProcessorOnDiskImpl(fileInputStream, true);
+            proc.uncompressAndPrepare();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        printOutHeaderInfoFromRawBinary(proc);
+
+        byte[] individualBytes = proc.getUncompressedBinaryAsArray();
+        assertEquals(814182, individualBytes.length);
+
+        printOutData(proc);
+    }
+
     private void printOutHeaderInfoFromRawBinary(CyfaceDataProcessorOnDiskImpl proc)
             throws CyfaceCompressedDataProcessorException, IOException {
         byte[] individualBytes = proc.getUncompressedBinaryAsArray();

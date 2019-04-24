@@ -177,14 +177,29 @@ public abstract class AbstractCyfaceDataProcessor implements CyfaceDataProcessor
                     uncompressed = true;
                     retry = false;
                 } catch (ZipException e1) {
-                    // binary input created with cyface SDK before Version 3.3.0, used nowrap=false option
-                    if (e1.getMessage().equals("invalid stored block lengths")) {
-                        nowrap = false;
-                    } else {
-                        retry = false;
-                        throw new CyfaceCompressedDataProcessorException(
-                                "Binary input could not be uncompressed: " + e1.getMessage());
+
+                    switch (e1.getMessage()) {
+                        // binary input created with cyface SDK before Version 3.3.0, used nowrap=false option
+                        case "invalid stored block lengths": {
+                            nowrap = false;
+                            break;
+                        }
+                        // input maybe not compressed, even with compression flag set
+                        case "incorrect header check": {
+                            retry = false;
+                            uncompressed = true;
+                            reader = getCompressedInputStream();
+                            prepareUncompressed(reader);
+                            break;
+                        }
+                        // all other exceptions
+                        default: {
+                            retry = false;
+                            throw new CyfaceCompressedDataProcessorException(
+                                    "Binary input could not be uncompressed: " + e1.getMessage());
+                        }
                     }
+
                 } finally {
                     if (reader != null) {
                         reader.close();
@@ -200,15 +215,19 @@ public abstract class AbstractCyfaceDataProcessor implements CyfaceDataProcessor
 
             uncompressedBinaryInputStream = getUncompressedInputStream();
         } else {
-            reader = getCompressedInputStream();
-            IOUtils.copy(reader, uncompressedBinaryOutputStream, 1024);
+            prepareUncompressed(reader);
             uncompressedBinaryInputStream = getUncompressedInputStream();
-            if (reader != null) {
-                reader.close();
-            }
         }
 
         return this;
+    }
+
+    private void prepareUncompressed(InputStream reader) throws IOException {
+        reader = getCompressedInputStream();
+        IOUtils.copy(reader, uncompressedBinaryOutputStream, 1024);
+        if (reader != null) {
+            reader.close();
+        }
     }
 
     protected void uncompress(InputStream compressedBinaryInputStream, OutputStream uncompressedBinaryOutputStream,
